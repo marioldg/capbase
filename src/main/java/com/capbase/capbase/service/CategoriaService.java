@@ -1,5 +1,6 @@
 package com.capbase.capbase.service;
 
+import com.capbase.capbase.exception.ResourceNotFoundException;
 import com.capbase.capbase.model.Categoria;
 import com.capbase.capbase.repository.CategoriaRepository;
 import org.springframework.stereotype.Service;
@@ -25,29 +26,27 @@ public class CategoriaService {
     }
 
     public void eliminarCategoria(Long id) {
-        // Compruebo primero si existe para evitar borrar algo que no está
+        // Compruebo primero si existe antes de intentar borrarla
         if (!categoriaRepository.existsById(id)) {
-            throw new RuntimeException("Categoria no encontrada con id: " + id);
+            throw new ResourceNotFoundException("Categoria no encontrada con id: " + id);
         }
 
         categoriaRepository.deleteById(id);
     }
 
     public Categoria actualizarCategoria(Long id, Categoria categoriaActualizada) {
-        // Busco la categoria por id
+        // Busco la categoria para actualizar solo si existe
         Optional<Categoria> categoriaOptional = categoriaRepository.findById(id);
 
         if (categoriaOptional.isPresent()) {
             Categoria categoriaExistente = categoriaOptional.get();
 
-            // Actualizo solo los campos que me interesan
             categoriaExistente.setNombre(categoriaActualizada.getNombre());
             categoriaExistente.setDescripcion(categoriaActualizada.getDescripcion());
 
             return categoriaRepository.save(categoriaExistente);
         }
 
-        // Si no existe, lanzo una excepción en vez de devolver null
-        throw new RuntimeException("Categoria no encontrada con id: " + id);
+        throw new ResourceNotFoundException("Categoria no encontrada con id: " + id);
     }
 }
