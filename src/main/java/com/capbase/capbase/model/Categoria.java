@@ -1,36 +1,50 @@
 package com.capbase.capbase.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import lombok.*;
 
 @Entity
 @Table(name = "categorias")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Categoria {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // El nombre es obligatorio, no quiero categorias vacias o sin sentido
-    @NotBlank(message = "El nombre de la categoria es obligatorio")
     private String nombre;
 
     private String descripcion;
+
+    // Constructor vacío
+    public Categoria() {
+    }
+
+    // Constructor completo
+    public Categoria(Long id, String nombre, String descripcion) {
+        this.id = id;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+    }
+
+    // Getters y setters
+
+    public Long getId() {
+        return id;
+    }
 
     public String getNombre() {
         return nombre;
     }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
     public String getDescripcion() {
         return descripcion;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
     }
 
     public void setDescripcion(String descripcion) {
