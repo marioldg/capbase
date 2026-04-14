@@ -1,5 +1,6 @@
 package com.capbase.capbase.service;
 
+import com.capbase.capbase.dto.MovimientoDTO;
 import com.capbase.capbase.exception.ResourceNotFoundException;
 import com.capbase.capbase.model.Categoria;
 import com.capbase.capbase.model.Movimiento;
@@ -10,6 +11,7 @@ import com.capbase.capbase.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class MovimientoService {
@@ -26,8 +28,12 @@ public class MovimientoService {
         this.categoriaRepository = categoriaRepository;
     }
 
-    public List<Movimiento> obtenerTodos() {
-        return movimientoRepository.findAll();
+    public List<MovimientoDTO> obtenerTodos() {
+        // Convierto la lista de movimientos a DTO para no devolver toda la entidad completa
+        return movimientoRepository.findAll()
+                .stream()
+                .map(this::convertirDTO)
+                .collect(Collectors.toList());
     }
 
     public Movimiento guardarMovimiento(Movimiento movimiento) {
@@ -81,5 +87,18 @@ public class MovimientoService {
         movimiento.setCategoria(categoria);
 
         return movimientoRepository.save(movimiento);
+    }
+
+    private MovimientoDTO convertirDTO (Movimiento movimiento) {
+        return new MovimientoDTO(
+                movimiento.getId(),
+                movimiento.getConcepto(),
+                movimiento.getDescripcion(),
+                movimiento.getCantidad(),
+                movimiento.getFecha(),
+                movimiento.getTipo(),
+                movimiento.getCategoria().getNombre(),
+                movimiento.getUsuario().getNombre()
+        );
     }
 }

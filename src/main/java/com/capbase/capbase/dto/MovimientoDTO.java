@@ -1,54 +1,35 @@
-package com.capbase.capbase.model;
-
-import jakarta.persistence.*;
+package com.capbase.capbase.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Entity
-@Table(name = "movimientos")
-public class Movimiento {
+public class MovimientoDTO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String concepto;
-
     private String descripcion;
-
     private BigDecimal cantidad;
-
     private LocalDate fecha;
-
     private String tipo;
-
-    @ManyToOne
-    @JoinColumn(name = "usuario_id")
-    private Usuario usuario;
-
-    @ManyToOne
-    @JoinColumn(name = "categoria_id")
-    private Categoria categoria;
+    private String categoriaNombre;
+    private String usuarioNombre;
 
     // Constructor vacío
-    public Movimiento() {
+    public MovimientoDTO() {
     }
 
     // Constructor completo
-    public Movimiento(Long id, String concepto, String descripcion, BigDecimal cantidad,
-                      LocalDate fecha, String tipo, Usuario usuario, Categoria categoria) {
+    public MovimientoDTO(Long id, String concepto, String descripcion, BigDecimal cantidad,
+                         LocalDate fecha, String tipo, String categoriaNombre, String usuarioNombre) {
         this.id = id;
         this.concepto = concepto;
         this.descripcion = descripcion;
         this.cantidad = cantidad;
         this.fecha = fecha;
         this.tipo = tipo;
-        this.usuario = usuario;
-        this.categoria = categoria;
+        this.categoriaNombre = categoriaNombre;
+        this.usuarioNombre = usuarioNombre;
     }
-
-    // Getters
 
     public Long getId() {
         return id;
@@ -74,15 +55,13 @@ public class Movimiento {
         return tipo;
     }
 
-    public Usuario getUsuario() {
-        return usuario;
+    public String getCategoriaNombre() {
+        return categoriaNombre;
     }
 
-    public Categoria getCategoria() {
-        return categoria;
+    public String getUsuarioNombre() {
+        return usuarioNombre;
     }
-
-    // Setters
 
     public void setId(Long id) {
         this.id = id;
@@ -108,11 +87,11 @@ public class Movimiento {
         this.tipo = tipo;
     }
 
-    public void setUsuario(Usuario usuario) {
-        this.usuario = usuario;
+    public void setCategoriaNombre(String categoriaNombre) {
+        this.categoriaNombre = categoriaNombre;
     }
 
-    public void setCategoria(Categoria categoria) {
-        this.categoria = categoria;
+    public void setUsuarioNombre(String usuarioNombre) {
+        this.usuarioNombre = usuarioNombre;
     }
 }

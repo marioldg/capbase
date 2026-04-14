@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "categorias")
+
 public class Categoria {
 
     @Id
@@ -25,7 +26,7 @@ public class Categoria {
         this.descripcion = descripcion;
     }
 
-    // Getters y setters
+    // Getters y setters (los pongo a mano para evitar problemas con Lombok)
 
     public Long getId() {
         return id;

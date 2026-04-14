@@ -1,5 +1,6 @@
 package com.capbase.capbase.controller;
 
+import com.capbase.capbase.dto.MovimientoDTO;
 import com.capbase.capbase.model.Movimiento;
 import com.capbase.capbase.service.MovimientoService;
 import jakarta.validation.Valid;
@@ -18,7 +19,7 @@ public class MovimientoController {
     }
 
     @GetMapping
-    public List<Movimiento> obtenerMovimientos() {
+    public List<MovimientoDTO> obtenerMovimientos() {
         return movimientoService.obtenerTodos();
     }
 
