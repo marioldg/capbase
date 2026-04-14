@@ -1,5 +1,6 @@
 package com.capbase.capbase.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,6 +22,8 @@ public class Usuario {
     @Column(unique = true)
     private String email;
 
+    // No quiero que la contraseña se devuelva en las respuestas JSON
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     private LocalDate fechaRegistro;
