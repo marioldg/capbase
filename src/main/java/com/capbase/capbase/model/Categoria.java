@@ -1,6 +1,7 @@
 package com.capbase.capbase.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 @Entity
@@ -14,6 +15,8 @@ public class Categoria {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // El nombre es obligatorio, no quiero categorias vacias o sin sentido
+    @NotBlank(message = "El nombre de la categoria es obligatorio")
     private String nombre;
 
     private String descripcion;
