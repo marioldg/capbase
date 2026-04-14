@@ -1,6 +1,7 @@
 package com.capbase.capbase.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -17,71 +18,24 @@ public class Movimiento {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // El concepto es obligatorio
+    @NotBlank(message = "El concepto es obligatorio")
     private String concepto;
 
     private String descripcion;
 
+    // La cantidad debe ser mayor que 0
+    @NotNull(message = "La cantidad es obligatoria")
+    @DecimalMin(value = "0.01", message = "La cantidad debe ser mayor que 0")
     private BigDecimal cantidad;
 
+    // La fecha no puede ser nula
+    @NotNull(message = "La fecha es obligatoria")
     private LocalDate fecha;
 
+    // Tipo obligatorio (GASTO o INGRESO)
+    @NotBlank(message = "El tipo es obligatorio")
     private String tipo;
-
-    public String getConcepto() {
-        return concepto;
-    }
-
-    public void setConcepto(String concepto) {
-        this.concepto = concepto;
-    }
-
-    public String getDescripcion() {
-        return descripcion;
-    }
-
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
-    }
-
-    public BigDecimal getCantidad() {
-        return cantidad;
-    }
-
-    public void setCantidad(BigDecimal cantidad) {
-        this.cantidad = cantidad;
-    }
-
-    public LocalDate getFecha() {
-        return fecha;
-    }
-
-    public void setFecha(LocalDate fecha) {
-        this.fecha = fecha;
-    }
-
-    public String getTipo() {
-        return tipo;
-    }
-
-    public void setTipo(String tipo) {
-        this.tipo = tipo;
-    }
-
-    public Usuario getUsuario() {
-        return usuario;
-    }
-
-    public void setUsuario(Usuario usuario) {
-        this.usuario = usuario;
-    }
-
-    public Categoria getCategoria() {
-        return categoria;
-    }
-
-    public void setCategoria(Categoria categoria) {
-        this.categoria = categoria;
-    }
 
     @ManyToOne
     @JoinColumn(name = "usuario_id")
