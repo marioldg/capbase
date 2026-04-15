@@ -2,6 +2,7 @@ package com.capbase.capbase.service;
 
 import com.capbase.capbase.dto.MovimientoCrearDTO;
 import com.capbase.capbase.dto.MovimientoDTO;
+import com.capbase.capbase.dto.ResumenMovimientoDTO;
 import com.capbase.capbase.exception.ResourceNotFoundException;
 import com.capbase.capbase.model.Categoria;
 import com.capbase.capbase.model.Movimiento;
@@ -11,6 +12,7 @@ import com.capbase.capbase.repository.MovimientoRepository;
 import com.capbase.capbase.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,12 +31,22 @@ public class MovimientoService {
         this.categoriaRepository = categoriaRepository;
     }
 
-    public List<MovimientoDTO> obtenerTodos(Long usuarioId) {
+    public List<MovimientoDTO> obtenerTodos(Long usuarioId, Long categoriaId) {
         List<Movimiento> movimientos;
 
-        // Si me pasan usuarioId, filtro por usuario; si no, saco todos
-        if (usuarioId != null) {
+        // Si me pasan usuarioId y categoriaId, filtro por ambos
+        if (usuarioId != null && categoriaId != null) {
+            movimientos = movimientoRepository.findByUsuarioIdAndCategoriaId(usuarioId, categoriaId);
+
+            // Si me pasan solo usuarioId, filtro por usuario
+        } else if (usuarioId != null) {
             movimientos = movimientoRepository.findByUsuarioId(usuarioId);
+
+            // Si me pasan solo categoriaId, filtro por categoria
+        } else if (categoriaId != null) {
+            movimientos = movimientoRepository.findByCategoriaId(categoriaId);
+
+            // Si no me pasan nada, saco todos
         } else {
             movimientos = movimientoRepository.findAll();
         }
@@ -42,6 +54,25 @@ public class MovimientoService {
         return movimientos.stream()
                 .map(this::convertirDTO)
                 .collect(Collectors.toList());
+    }
+
+    public ResumenMovimientoDTO obtenerResumenPorUsuario(Long usuarioId) {
+        List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId);
+
+        BigDecimal totalIngresos = BigDecimal.ZERO;
+        BigDecimal totalGastos = BigDecimal.ZERO;
+
+        for (Movimiento movimiento : movimientos) {
+            if ("INGRESO".equalsIgnoreCase(movimiento.getTipo())) {
+                totalIngresos = totalIngresos.add(movimiento.getCantidad());
+            } else if ("GASTO".equalsIgnoreCase(movimiento.getTipo())) {
+                totalGastos = totalGastos.add(movimiento.getCantidad());
+            }
+        }
+
+        BigDecimal balance = totalIngresos.subtract(totalGastos);
+
+        return new ResumenMovimientoDTO(totalIngresos, totalGastos, balance);
     }
 
     public MovimientoDTO guardarMovimiento(MovimientoCrearDTO dto) {

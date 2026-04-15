@@ -2,6 +2,7 @@ package com.capbase.capbase.controller;
 
 import com.capbase.capbase.dto.MovimientoCrearDTO;
 import com.capbase.capbase.dto.MovimientoDTO;
+import com.capbase.capbase.dto.ResumenMovimientoDTO;
 import com.capbase.capbase.service.MovimientoService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +20,15 @@ public class MovimientoController {
     }
 
     @GetMapping
-    public List<MovimientoDTO> obtenerMovimientos(@RequestParam(required = false) Long usuarioId) {
-        return movimientoService.obtenerTodos(usuarioId);
+    public List<MovimientoDTO> obtenerMovimientos(
+            @RequestParam(required = false) Long usuarioId,
+            @RequestParam(required = false) Long categoriaId) {
+        return movimientoService.obtenerTodos(usuarioId, categoriaId);
+    }
+
+    @GetMapping("/resumen")
+    public ResumenMovimientoDTO obtenerResumen(@RequestParam Long usuarioId) {
+        return movimientoService.obtenerResumenPorUsuario(usuarioId);
     }
 
     @PostMapping
