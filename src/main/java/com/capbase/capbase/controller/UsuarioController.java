@@ -1,32 +1,40 @@
 package com.capbase.capbase.controller;
 
-import com.capbase.capbase.model.Usuario;
-import com.capbase.capbase.repository.UsuarioRepository;
+import com.capbase.capbase.dto.UsuarioCrearDTO;
+import com.capbase.capbase.dto.UsuarioDTO;
+import com.capbase.capbase.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
 @RequestMapping("/usuarios")
 public class UsuarioController {
 
-    private final UsuarioRepository usuarioRepository;
+    private final UsuarioService usuarioService;
 
-    public UsuarioController(UsuarioRepository usuarioRepository) {
-        this.usuarioRepository = usuarioRepository;
+    public UsuarioController(UsuarioService usuarioService) {
+        this.usuarioService = usuarioService;
     }
 
     @GetMapping
-    public List<Usuario> obtenerUsuarios() {
-        return usuarioRepository.findAll();
+    public List<UsuarioDTO> obtenerUsuarios() {
+        return usuarioService.obtenerTodos();
     }
 
     @PostMapping
-    public Usuario crearUsuario(@Valid @RequestBody Usuario usuario) {
-        // Le pongo la fecha actual automaticamente al crear el usuario
-        usuario.setFechaRegistro(LocalDate.now());
-        return usuarioRepository.save(usuario);
+    public UsuarioDTO crearUsuario(@Valid @RequestBody UsuarioCrearDTO usuario) {
+        return usuarioService.guardarUsuario(usuario);
+    }
+
+    @PutMapping("/{id}")
+    public UsuarioDTO actualizarUsuario(@PathVariable Long id, @Valid @RequestBody UsuarioCrearDTO usuario) {
+        return usuarioService.actualizarUsuario(id, usuario);
+    }
+
+    @DeleteMapping("/{id}")
+    public void eliminarUsuario(@PathVariable Long id) {
+        usuarioService.eliminarUsuario(id);
     }
 }
