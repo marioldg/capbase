@@ -1,7 +1,7 @@
 package com.capbase.capbase.controller;
 
+import com.capbase.capbase.dto.MovimientoCrearDTO;
 import com.capbase.capbase.dto.MovimientoDTO;
-import com.capbase.capbase.model.Movimiento;
 import com.capbase.capbase.service.MovimientoService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -24,13 +24,13 @@ public class MovimientoController {
     }
 
     @PostMapping
-    public Movimiento guardarMovimiento(@Valid @RequestBody Movimiento movimiento) {
+    public MovimientoDTO guardarMovimiento(@Valid @RequestBody MovimientoCrearDTO movimiento) {
         // Aqui creo un nuevo movimiento
         return movimientoService.guardarMovimiento(movimiento);
     }
 
     @PutMapping("/{id}")
-    public Movimiento actualizarMovimiento(@PathVariable Long id, @Valid @RequestBody Movimiento movimiento) {
+    public MovimientoDTO actualizarMovimiento(@PathVariable Long id, @Valid @RequestBody MovimientoCrearDTO movimiento) {
         // Actualizo un movimiento existente
         return movimientoService.actualizarMovimiento(id, movimiento);
     }

@@ -1,5 +1,6 @@
 package com.capbase.capbase.service;
 
+import com.capbase.capbase.dto.MovimientoCrearDTO;
 import com.capbase.capbase.dto.MovimientoDTO;
 import com.capbase.capbase.exception.ResourceNotFoundException;
 import com.capbase.capbase.model.Categoria;
@@ -36,22 +37,28 @@ public class MovimientoService {
                 .collect(Collectors.toList());
     }
 
-    public Movimiento guardarMovimiento(Movimiento movimiento) {
-        Long usuarioId = movimiento.getUsuario().getId();
-        Long categoriaId = movimiento.getCategoria().getId();
+    public MovimientoDTO guardarMovimiento(MovimientoCrearDTO dto) {
+        // Busco el usuario por id
+        Usuario usuario = usuarioRepository.findById(dto.getUsuarioId())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + dto.getUsuarioId()));
 
-        // Compruebo que el usuario existe antes de guardar
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + usuarioId));
+        // Busco la categoria por id
+        Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
+                .orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada con id: " + dto.getCategoriaId()));
 
-        // Compruebo que la categoria existe antes de guardar
-        Categoria categoria = categoriaRepository.findById(categoriaId)
-                .orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada con id: " + categoriaId));
-
+        // Creo el movimiento con los datos que vienen del DTO
+        Movimiento movimiento = new Movimiento();
+        movimiento.setConcepto(dto.getConcepto());
+        movimiento.setDescripcion(dto.getDescripcion());
+        movimiento.setCantidad(dto.getCantidad());
+        movimiento.setFecha(dto.getFecha());
+        movimiento.setTipo(dto.getTipo());
         movimiento.setUsuario(usuario);
         movimiento.setCategoria(categoria);
 
-        return movimientoRepository.save(movimiento);
+        Movimiento movimientoGuardado = movimientoRepository.save(movimiento);
+
+        return convertirDTO(movimientoGuardado);
     }
 
     public void eliminarMovimiento(Long id) {
@@ -63,33 +70,30 @@ public class MovimientoService {
         movimientoRepository.deleteById(id);
     }
 
-    public Movimiento actualizarMovimiento(Long id, Movimiento movimientoActualizado) {
+    public MovimientoDTO actualizarMovimiento(Long id, MovimientoCrearDTO dto) {
         Movimiento movimiento = movimientoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Movimiento no encontrado con id: " + id));
 
-        Long usuarioId = movimientoActualizado.getUsuario().getId();
-        Long categoriaId = movimientoActualizado.getCategoria().getId();
+        Usuario usuario = usuarioRepository.findById(dto.getUsuarioId())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + dto.getUsuarioId()));
 
-        // Compruebo que el usuario existe tambien al actualizar
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + usuarioId));
+        Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
+                .orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada con id: " + dto.getCategoriaId()));
 
-        // Compruebo que la categoria existe tambien al actualizar
-        Categoria categoria = categoriaRepository.findById(categoriaId)
-                .orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada con id: " + categoriaId));
-
-        movimiento.setConcepto(movimientoActualizado.getConcepto());
-        movimiento.setDescripcion(movimientoActualizado.getDescripcion());
-        movimiento.setCantidad(movimientoActualizado.getCantidad());
-        movimiento.setFecha(movimientoActualizado.getFecha());
-        movimiento.setTipo(movimientoActualizado.getTipo());
+        movimiento.setConcepto(dto.getConcepto());
+        movimiento.setDescripcion(dto.getDescripcion());
+        movimiento.setCantidad(dto.getCantidad());
+        movimiento.setFecha(dto.getFecha());
+        movimiento.setTipo(dto.getTipo());
         movimiento.setUsuario(usuario);
         movimiento.setCategoria(categoria);
 
-        return movimientoRepository.save(movimiento);
+        Movimiento movimientoActualizado = movimientoRepository.save(movimiento);
+
+        return convertirDTO(movimientoActualizado);
     }
 
-    private MovimientoDTO convertirDTO (Movimiento movimiento) {
+    private MovimientoDTO convertirDTO(Movimiento movimiento) {
         return new MovimientoDTO(
                 movimiento.getId(),
                 movimiento.getConcepto(),
