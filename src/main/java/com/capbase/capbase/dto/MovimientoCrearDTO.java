@@ -1,16 +1,33 @@
 package com.capbase.capbase.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class MovimientoCrearDTO {
 
+    @NotBlank(message = "El concepto no puede estar vacío")
     private String concepto;
+
     private String descripcion;
+
+    @NotNull(message = "La cantidad es obligatoria")
+    @Positive(message = "La cantidad debe ser mayor que 0")
     private BigDecimal cantidad;
+
+    @NotNull(message = "La fecha es obligatoria")
     private LocalDate fecha;
+
+    @NotBlank(message = "El tipo es obligatorio")
     private String tipo;
+
+    @NotNull(message = "La categoria es obligatoria")
     private Long categoriaId;
+
+    @NotNull(message = "El usuario es obligatorio")
     private Long usuarioId;
 
     // Constructor vacío
