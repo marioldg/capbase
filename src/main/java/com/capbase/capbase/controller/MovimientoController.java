@@ -19,8 +19,8 @@ public class MovimientoController {
     }
 
     @GetMapping
-    public List<MovimientoDTO> obtenerMovimientos() {
-        return movimientoService.obtenerTodos();
+    public List<MovimientoDTO> obtenerMovimientos(@RequestParam(required = false) Long usuarioId) {
+        return movimientoService.obtenerTodos(usuarioId);
     }
 
     @PostMapping

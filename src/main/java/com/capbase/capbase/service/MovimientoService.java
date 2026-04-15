@@ -29,10 +29,17 @@ public class MovimientoService {
         this.categoriaRepository = categoriaRepository;
     }
 
-    public List<MovimientoDTO> obtenerTodos() {
-        // Convierto la lista de movimientos a DTO para no devolver toda la entidad completa
-        return movimientoRepository.findAll()
-                .stream()
+    public List<MovimientoDTO> obtenerTodos(Long usuarioId) {
+        List<Movimiento> movimientos;
+
+        // Si me pasan usuarioId, filtro por usuario; si no, saco todos
+        if (usuarioId != null) {
+            movimientos = movimientoRepository.findByUsuarioId(usuarioId);
+        } else {
+            movimientos = movimientoRepository.findAll();
+        }
+
+        return movimientos.stream()
                 .map(this::convertirDTO)
                 .collect(Collectors.toList());
     }
