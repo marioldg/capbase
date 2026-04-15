@@ -1,6 +1,7 @@
 package com.capbase.capbase.controller;
 
-import com.capbase.capbase.model.Categoria;
+import com.capbase.capbase.dto.CategoriaCrearDTO;
+import com.capbase.capbase.dto.CategoriaDTO;
 import com.capbase.capbase.service.CategoriaService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -18,18 +19,18 @@ public class CategoriaController {
     }
 
     @GetMapping
-    public List<Categoria> obtenerCategorias() {
+    public List<CategoriaDTO> obtenerCategorias() {
         return categoriaService.obtenerTodas();
     }
 
     @PostMapping
-    public Categoria guardarCategoria(@Valid @RequestBody Categoria categoria) {
-        // Aqui valido que la categoria que llega cumple las reglas (por ejemplo, nombre no vacio)
+    public CategoriaDTO guardarCategoria(@Valid @RequestBody CategoriaCrearDTO categoria) {
+        // Aqui valido que la categoria que llega cumple las reglas
         return categoriaService.guardarCategoria(categoria);
     }
 
     @PutMapping("/{id}")
-    public Categoria actualizarCategoria(@PathVariable Long id, @Valid @RequestBody Categoria categoria) {
+    public CategoriaDTO actualizarCategoria(@PathVariable Long id, @Valid @RequestBody CategoriaCrearDTO categoria) {
         // Tambien valido en el update para evitar datos incorrectos
         return categoriaService.actualizarCategoria(id, categoria);
     }
