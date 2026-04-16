@@ -1,16 +1,15 @@
 package com.capbase.capbase.repository;
 
 import com.capbase.capbase.model.Movimiento;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-
-import java.util.List;
 
 public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
 
-    List<Movimiento> findByUsuarioId(Long usuarioId);
+    Page<Movimiento> findByUsuarioId(Long usuarioId, Pageable pageable);
 
-    List<Movimiento> findByCategoriaId(Long categoriaId);
+    Page<Movimiento> findByCategoriaId(Long categoriaId, Pageable pageable);
 
-    // 🔥 ESTE ES EL QUE TE FALTA
-    List<Movimiento> findByUsuarioIdAndCategoriaId(Long usuarioId, Long categoriaId);
+    Page<Movimiento> findByUsuarioIdAndCategoriaId(Long usuarioId, Long categoriaId, Pageable pageable);
 }

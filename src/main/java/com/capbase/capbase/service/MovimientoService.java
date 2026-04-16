@@ -12,6 +12,9 @@ import com.capbase.capbase.model.Usuario;
 import com.capbase.capbase.repository.CategoriaRepository;
 import com.capbase.capbase.repository.MovimientoRepository;
 import com.capbase.capbase.repository.UsuarioRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -33,18 +36,22 @@ public class MovimientoService {
         this.categoriaRepository = categoriaRepository;
     }
 
-    public List<MovimientoDTO> obtenerTodos(Long usuarioId, Long categoriaId, String search) {
-        List<Movimiento> movimientos;
+    public List<MovimientoDTO> obtenerTodos(Long usuarioId, Long categoriaId, String search, String orden, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Movimiento> paginaMovimientos;
 
         if (usuarioId != null && categoriaId != null) {
-            movimientos = movimientoRepository.findByUsuarioIdAndCategoriaId(usuarioId, categoriaId);
+            paginaMovimientos = movimientoRepository.findByUsuarioIdAndCategoriaId(usuarioId, categoriaId, pageable);
         } else if (usuarioId != null) {
-            movimientos = movimientoRepository.findByUsuarioId(usuarioId);
+            paginaMovimientos = movimientoRepository.findByUsuarioId(usuarioId, pageable);
         } else if (categoriaId != null) {
-            movimientos = movimientoRepository.findByCategoriaId(categoriaId);
+            paginaMovimientos = movimientoRepository.findByCategoriaId(categoriaId, pageable);
         } else {
-            movimientos = movimientoRepository.findAll();
+            paginaMovimientos = movimientoRepository.findAll(pageable);
         }
+
+        // hago una copia para poder ordenar sin que pete
+        List<Movimiento> movimientos = new ArrayList<>(paginaMovimientos.getContent());
 
         // si me pasan texto, filtro por concepto o descripcion
         if (search != null && !search.trim().isEmpty()) {
@@ -59,13 +66,21 @@ public class MovimientoService {
                     .collect(Collectors.toList());
         }
 
+        // ordenar por fecha
+        if ("asc".equalsIgnoreCase(orden)) {
+            movimientos.sort(Comparator.comparing(Movimiento::getFecha));
+        } else {
+            // por defecto desc
+            movimientos.sort(Comparator.comparing(Movimiento::getFecha).reversed());
+        }
+
         return movimientos.stream()
                 .map(this::convertirDTO)
                 .collect(Collectors.toList());
     }
 
     public ResumenMovimientoDTO obtenerResumenPorUsuario(Long usuarioId) {
-        List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId);
+        List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId, Pageable.unpaged()).getContent();
 
         BigDecimal totalIngresos = BigDecimal.ZERO;
         BigDecimal totalGastos = BigDecimal.ZERO;
@@ -84,7 +99,7 @@ public class MovimientoService {
     }
 
     public List<ResumenCategoriaDTO> obtenerResumenPorCategorias(Long usuarioId, String tipo, Integer mes, Integer anio) {
-        List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId);
+        List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId, Pageable.unpaged()).getContent();
 
         Map<String, BigDecimal> totalesPorCategoria = new LinkedHashMap<>();
 
@@ -117,7 +132,7 @@ public class MovimientoService {
     }
 
     public List<ResumenMensualDTO> obtenerResumenMensual(Long usuarioId, Integer anio) {
-        List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId);
+        List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId, Pageable.unpaged()).getContent();
 
         Map<Integer, BigDecimal> ingresosPorMes = new LinkedHashMap<>();
         Map<Integer, BigDecimal> gastosPorMes = new LinkedHashMap<>();
@@ -153,7 +168,7 @@ public class MovimientoService {
     }
 
     public List<ResumenCategoriaDTO> obtenerTopCategorias(Long usuarioId, Integer limite) {
-        List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId);
+        List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId, Pageable.unpaged()).getContent();
 
         Map<String, BigDecimal> totalesPorCategoria = new HashMap<>();
 

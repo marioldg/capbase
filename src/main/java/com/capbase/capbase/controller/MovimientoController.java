@@ -25,8 +25,11 @@ public class MovimientoController {
     public List<MovimientoDTO> obtenerMovimientos(
             @RequestParam(required = false) Long usuarioId,
             @RequestParam(required = false) Long categoriaId,
-            @RequestParam(required = false) String search) {
-        return movimientoService.obtenerTodos(usuarioId, categoriaId, search);
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false, defaultValue = "desc") String orden,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "5") int size) {
+        return movimientoService.obtenerTodos(usuarioId, categoriaId, search, orden, page, size);
     }
 
     @GetMapping("/resumen")
