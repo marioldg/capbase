@@ -3,6 +3,7 @@ package com.capbase.capbase.service;
 import com.capbase.capbase.dto.MovimientoCrearDTO;
 import com.capbase.capbase.dto.MovimientoDTO;
 import com.capbase.capbase.dto.ResumenCategoriaDTO;
+import com.capbase.capbase.dto.ResumenMensualDTO;
 import com.capbase.capbase.dto.ResumenMovimientoDTO;
 import com.capbase.capbase.exception.ResourceNotFoundException;
 import com.capbase.capbase.model.Categoria;
@@ -79,14 +80,23 @@ public class MovimientoService {
         return new ResumenMovimientoDTO(totalIngresos, totalGastos, balance);
     }
 
-    public List<ResumenCategoriaDTO> obtenerResumenPorCategorias(Long usuarioId) {
+    public List<ResumenCategoriaDTO> obtenerResumenPorCategorias(Long usuarioId, String tipo, Integer mes, Integer anio) {
         List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId);
 
         Map<String, BigDecimal> totalesPorCategoria = new LinkedHashMap<>();
 
         for (Movimiento movimiento : movimientos) {
-            // De momento solo sumo los gastos por categoría
-            if ("GASTO".equalsIgnoreCase(movimiento.getTipo())) {
+            boolean mismoTipo = movimiento.getTipo().equalsIgnoreCase(tipo);
+
+            boolean mismaFecha = true;
+
+            // si me pasan mes y año, filtro por fecha
+            if (mes != null && anio != null) {
+                mismaFecha = movimiento.getFecha().getMonthValue() == mes
+                        && movimiento.getFecha().getYear() == anio;
+            }
+
+            if (mismoTipo && mismaFecha) {
                 String nombreCategoria = movimiento.getCategoria().getNombre();
                 BigDecimal totalActual = totalesPorCategoria.getOrDefault(nombreCategoria, BigDecimal.ZERO);
                 totalesPorCategoria.put(nombreCategoria, totalActual.add(movimiento.getCantidad()));
@@ -99,7 +109,49 @@ public class MovimientoService {
             resumen.add(new ResumenCategoriaDTO(entry.getKey(), entry.getValue()));
         }
 
+        // ordenar de mayor a menor
+        resumen.sort((a, b) -> b.getTotal().compareTo(a.getTotal()));
+
         return resumen;
+    }
+
+    public List<ResumenMensualDTO> obtenerResumenMensual(Long usuarioId, Integer anio) {
+        List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId);
+
+        Map<Integer, BigDecimal> ingresosPorMes = new LinkedHashMap<>();
+        Map<Integer, BigDecimal> gastosPorMes = new LinkedHashMap<>();
+
+        // inicializo los 12 meses para que salgan todos aunque alguno esté a 0
+        for (int mes = 1; mes <= 12; mes++) {
+            ingresosPorMes.put(mes, BigDecimal.ZERO);
+            gastosPorMes.put(mes, BigDecimal.ZERO);
+        }
+
+        for (Movimiento movimiento : movimientos) {
+            if (movimiento.getFecha().getYear() == anio) {
+                int mes = movimiento.getFecha().getMonthValue();
+
+                if ("INGRESO".equalsIgnoreCase(movimiento.getTipo())) {
+                    BigDecimal totalActual = ingresosPorMes.get(mes);
+                    ingresosPorMes.put(mes, totalActual.add(movimiento.getCantidad()));
+                } else if ("GASTO".equalsIgnoreCase(movimiento.getTipo())) {
+                    BigDecimal totalActual = gastosPorMes.get(mes);
+                    gastosPorMes.put(mes, totalActual.add(movimiento.getCantidad()));
+                }
+            }
+        }
+
+        List<ResumenMensualDTO> resumenMensual = new ArrayList<>();
+
+        for (int mes = 1; mes <= 12; mes++) {
+            BigDecimal ingresos = ingresosPorMes.get(mes);
+            BigDecimal gastos = gastosPorMes.get(mes);
+            BigDecimal balance = ingresos.subtract(gastos);
+
+            resumenMensual.add(new ResumenMensualDTO(mes, ingresos, gastos, balance));
+        }
+
+        return resumenMensual;
     }
 
     public MovimientoDTO guardarMovimiento(MovimientoCrearDTO dto) {
