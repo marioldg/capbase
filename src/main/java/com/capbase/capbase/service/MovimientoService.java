@@ -2,6 +2,7 @@ package com.capbase.capbase.service;
 
 import com.capbase.capbase.dto.MovimientoCrearDTO;
 import com.capbase.capbase.dto.MovimientoDTO;
+import com.capbase.capbase.dto.PageResponseDTO;
 import com.capbase.capbase.dto.ResumenCategoriaDTO;
 import com.capbase.capbase.dto.ResumenMensualDTO;
 import com.capbase.capbase.dto.ResumenMovimientoDTO;
@@ -36,7 +37,7 @@ public class MovimientoService {
         this.categoriaRepository = categoriaRepository;
     }
 
-    public List<MovimientoDTO> obtenerTodos(Long usuarioId, Long categoriaId, String search, String orden, int page, int size) {
+    public PageResponseDTO<MovimientoDTO> obtenerTodos(Long usuarioId, Long categoriaId, String search, String orden, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Movimiento> paginaMovimientos;
 
@@ -74,9 +75,19 @@ public class MovimientoService {
             movimientos.sort(Comparator.comparing(Movimiento::getFecha).reversed());
         }
 
-        return movimientos.stream()
+        List<MovimientoDTO> content = movimientos.stream()
                 .map(this::convertirDTO)
                 .collect(Collectors.toList());
+
+        return new PageResponseDTO<>(
+                content,
+                paginaMovimientos.getNumber(),
+                paginaMovimientos.getSize(),
+                paginaMovimientos.getTotalElements(),
+                paginaMovimientos.getTotalPages(),
+                paginaMovimientos.isFirst(),
+                paginaMovimientos.isLast()
+        );
     }
 
     public ResumenMovimientoDTO obtenerResumenPorUsuario(Long usuarioId) {

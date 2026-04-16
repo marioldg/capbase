@@ -2,6 +2,7 @@ package com.capbase.capbase.controller;
 
 import com.capbase.capbase.dto.MovimientoCrearDTO;
 import com.capbase.capbase.dto.MovimientoDTO;
+import com.capbase.capbase.dto.PageResponseDTO;
 import com.capbase.capbase.dto.ResumenCategoriaDTO;
 import com.capbase.capbase.dto.ResumenMensualDTO;
 import com.capbase.capbase.dto.ResumenMovimientoDTO;
@@ -22,7 +23,7 @@ public class MovimientoController {
     }
 
     @GetMapping
-    public List<MovimientoDTO> obtenerMovimientos(
+    public PageResponseDTO<MovimientoDTO> obtenerMovimientos(
             @RequestParam(required = false) Long usuarioId,
             @RequestParam(required = false) Long categoriaId,
             @RequestParam(required = false) String search,
