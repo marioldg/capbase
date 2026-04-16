@@ -2,6 +2,7 @@ package com.capbase.capbase.service;
 
 import com.capbase.capbase.dto.MovimientoCrearDTO;
 import com.capbase.capbase.dto.MovimientoDTO;
+import com.capbase.capbase.dto.ResumenCategoriaDTO;
 import com.capbase.capbase.dto.ResumenMovimientoDTO;
 import com.capbase.capbase.exception.ResourceNotFoundException;
 import com.capbase.capbase.model.Categoria;
@@ -13,7 +14,10 @@ import com.capbase.capbase.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -73,6 +77,29 @@ public class MovimientoService {
         BigDecimal balance = totalIngresos.subtract(totalGastos);
 
         return new ResumenMovimientoDTO(totalIngresos, totalGastos, balance);
+    }
+
+    public List<ResumenCategoriaDTO> obtenerResumenPorCategorias(Long usuarioId) {
+        List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId);
+
+        Map<String, BigDecimal> totalesPorCategoria = new LinkedHashMap<>();
+
+        for (Movimiento movimiento : movimientos) {
+            // De momento solo sumo los gastos por categoría
+            if ("GASTO".equalsIgnoreCase(movimiento.getTipo())) {
+                String nombreCategoria = movimiento.getCategoria().getNombre();
+                BigDecimal totalActual = totalesPorCategoria.getOrDefault(nombreCategoria, BigDecimal.ZERO);
+                totalesPorCategoria.put(nombreCategoria, totalActual.add(movimiento.getCantidad()));
+            }
+        }
+
+        List<ResumenCategoriaDTO> resumen = new ArrayList<>();
+
+        for (Map.Entry<String, BigDecimal> entry : totalesPorCategoria.entrySet()) {
+            resumen.add(new ResumenCategoriaDTO(entry.getKey(), entry.getValue()));
+        }
+
+        return resumen;
     }
 
     public MovimientoDTO guardarMovimiento(MovimientoCrearDTO dto) {

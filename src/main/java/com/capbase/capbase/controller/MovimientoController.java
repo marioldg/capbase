@@ -2,6 +2,7 @@ package com.capbase.capbase.controller;
 
 import com.capbase.capbase.dto.MovimientoCrearDTO;
 import com.capbase.capbase.dto.MovimientoDTO;
+import com.capbase.capbase.dto.ResumenCategoriaDTO;
 import com.capbase.capbase.dto.ResumenMovimientoDTO;
 import com.capbase.capbase.service.MovimientoService;
 import jakarta.validation.Valid;
@@ -29,6 +30,11 @@ public class MovimientoController {
     @GetMapping("/resumen")
     public ResumenMovimientoDTO obtenerResumen(@RequestParam Long usuarioId) {
         return movimientoService.obtenerResumenPorUsuario(usuarioId);
+    }
+
+    @GetMapping("/resumen-categorias")
+    public List<ResumenCategoriaDTO> obtenerResumenPorCategorias(@RequestParam Long usuarioId) {
+        return movimientoService.obtenerResumenPorCategorias(usuarioId);
     }
 
     @PostMapping
