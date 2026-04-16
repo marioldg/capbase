@@ -24,8 +24,9 @@ public class MovimientoController {
     @GetMapping
     public List<MovimientoDTO> obtenerMovimientos(
             @RequestParam(required = false) Long usuarioId,
-            @RequestParam(required = false) Long categoriaId) {
-        return movimientoService.obtenerTodos(usuarioId, categoriaId);
+            @RequestParam(required = false) Long categoriaId,
+            @RequestParam(required = false) String search) {
+        return movimientoService.obtenerTodos(usuarioId, categoriaId, search);
     }
 
     @GetMapping("/resumen")
@@ -47,6 +48,13 @@ public class MovimientoController {
             @RequestParam Long usuarioId,
             @RequestParam Integer anio) {
         return movimientoService.obtenerResumenMensual(usuarioId, anio);
+    }
+
+    @GetMapping("/top-categorias")
+    public List<ResumenCategoriaDTO> obtenerTopCategorias(
+            @RequestParam Long usuarioId,
+            @RequestParam(required = false, defaultValue = "3") Integer limite) {
+        return movimientoService.obtenerTopCategorias(usuarioId, limite);
     }
 
     @PostMapping

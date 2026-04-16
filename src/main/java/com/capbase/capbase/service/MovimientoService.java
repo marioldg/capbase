@@ -15,10 +15,7 @@ import com.capbase.capbase.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,24 +33,30 @@ public class MovimientoService {
         this.categoriaRepository = categoriaRepository;
     }
 
-    public List<MovimientoDTO> obtenerTodos(Long usuarioId, Long categoriaId) {
+    public List<MovimientoDTO> obtenerTodos(Long usuarioId, Long categoriaId, String search) {
         List<Movimiento> movimientos;
 
-        // Si me pasan usuarioId y categoriaId, filtro por ambos
         if (usuarioId != null && categoriaId != null) {
             movimientos = movimientoRepository.findByUsuarioIdAndCategoriaId(usuarioId, categoriaId);
-
-            // Si me pasan solo usuarioId, filtro por usuario
         } else if (usuarioId != null) {
             movimientos = movimientoRepository.findByUsuarioId(usuarioId);
-
-            // Si me pasan solo categoriaId, filtro por categoria
         } else if (categoriaId != null) {
             movimientos = movimientoRepository.findByCategoriaId(categoriaId);
-
-            // Si no me pasan nada, saco todos
         } else {
             movimientos = movimientoRepository.findAll();
+        }
+
+        // si me pasan texto, filtro por concepto o descripcion
+        if (search != null && !search.trim().isEmpty()) {
+            String textoBusqueda = search.toLowerCase();
+
+            movimientos = movimientos.stream()
+                    .filter(movimiento ->
+                            movimiento.getConcepto().toLowerCase().contains(textoBusqueda) ||
+                                    (movimiento.getDescripcion() != null &&
+                                            movimiento.getDescripcion().toLowerCase().contains(textoBusqueda))
+                    )
+                    .collect(Collectors.toList());
         }
 
         return movimientos.stream()
@@ -90,7 +93,6 @@ public class MovimientoService {
 
             boolean mismaFecha = true;
 
-            // si me pasan mes y año, filtro por fecha
             if (mes != null && anio != null) {
                 mismaFecha = movimiento.getFecha().getMonthValue() == mes
                         && movimiento.getFecha().getYear() == anio;
@@ -109,7 +111,6 @@ public class MovimientoService {
             resumen.add(new ResumenCategoriaDTO(entry.getKey(), entry.getValue()));
         }
 
-        // ordenar de mayor a menor
         resumen.sort((a, b) -> b.getTotal().compareTo(a.getTotal()));
 
         return resumen;
@@ -121,7 +122,6 @@ public class MovimientoService {
         Map<Integer, BigDecimal> ingresosPorMes = new LinkedHashMap<>();
         Map<Integer, BigDecimal> gastosPorMes = new LinkedHashMap<>();
 
-        // inicializo los 12 meses para que salgan todos aunque alguno esté a 0
         for (int mes = 1; mes <= 12; mes++) {
             ingresosPorMes.put(mes, BigDecimal.ZERO);
             gastosPorMes.put(mes, BigDecimal.ZERO);
@@ -132,11 +132,9 @@ public class MovimientoService {
                 int mes = movimiento.getFecha().getMonthValue();
 
                 if ("INGRESO".equalsIgnoreCase(movimiento.getTipo())) {
-                    BigDecimal totalActual = ingresosPorMes.get(mes);
-                    ingresosPorMes.put(mes, totalActual.add(movimiento.getCantidad()));
+                    ingresosPorMes.put(mes, ingresosPorMes.get(mes).add(movimiento.getCantidad()));
                 } else if ("GASTO".equalsIgnoreCase(movimiento.getTipo())) {
-                    BigDecimal totalActual = gastosPorMes.get(mes);
-                    gastosPorMes.put(mes, totalActual.add(movimiento.getCantidad()));
+                    gastosPorMes.put(mes, gastosPorMes.get(mes).add(movimiento.getCantidad()));
                 }
             }
         }
@@ -154,16 +152,34 @@ public class MovimientoService {
         return resumenMensual;
     }
 
+    public List<ResumenCategoriaDTO> obtenerTopCategorias(Long usuarioId, Integer limite) {
+        List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId);
+
+        Map<String, BigDecimal> totalesPorCategoria = new HashMap<>();
+
+        for (Movimiento movimiento : movimientos) {
+            // solo gastos
+            if ("GASTO".equalsIgnoreCase(movimiento.getTipo())) {
+                String categoria = movimiento.getCategoria().getNombre();
+                BigDecimal totalActual = totalesPorCategoria.getOrDefault(categoria, BigDecimal.ZERO);
+                totalesPorCategoria.put(categoria, totalActual.add(movimiento.getCantidad()));
+            }
+        }
+
+        return totalesPorCategoria.entrySet().stream()
+                .map(entry -> new ResumenCategoriaDTO(entry.getKey(), entry.getValue()))
+                .sorted((a, b) -> b.getTotal().compareTo(a.getTotal()))
+                .limit(limite)
+                .collect(Collectors.toList());
+    }
+
     public MovimientoDTO guardarMovimiento(MovimientoCrearDTO dto) {
-        // Busco el usuario por id
         Usuario usuario = usuarioRepository.findById(dto.getUsuarioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + dto.getUsuarioId()));
 
-        // Busco la categoria por id
         Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
                 .orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada con id: " + dto.getCategoriaId()));
 
-        // Creo el movimiento con los datos que vienen del DTO
         Movimiento movimiento = new Movimiento();
         movimiento.setConcepto(dto.getConcepto());
         movimiento.setDescripcion(dto.getDescripcion());
@@ -179,7 +195,6 @@ public class MovimientoService {
     }
 
     public void eliminarMovimiento(Long id) {
-        // Compruebo si existe antes de borrar
         if (!movimientoRepository.existsById(id)) {
             throw new ResourceNotFoundException("Movimiento no encontrado con id: " + id);
         }

@@ -2,6 +2,7 @@ package com.capbase.capbase.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
@@ -22,6 +23,7 @@ public class MovimientoCrearDTO {
     private LocalDate fecha;
 
     @NotBlank(message = "El tipo es obligatorio")
+    @Pattern(regexp = "INGRESO|GASTO", message = "El tipo debe ser INGRESO o GASTO")
     private String tipo;
 
     @NotNull(message = "La categoria es obligatoria")
