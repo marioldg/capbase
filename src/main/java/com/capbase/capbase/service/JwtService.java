@@ -13,10 +13,7 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    // De momento la dejamos fija para avanzar.
     private static final String SECRET_KEY = "capbaseclaveprivadasegura123456789capbase";
-
-    // 24 horas
     private static final long EXPIRATION_TIME = 1000 * 60 * 60 * 24;
 
     public String generarToken(String email) {
@@ -33,6 +30,15 @@ public class JwtService {
 
     public String extraerEmail(String token) {
         return extraerClaims(token).getSubject();
+    }
+
+    public boolean tokenEsValido(String token, String email) {
+        final String emailToken = extraerEmail(token);
+        return emailToken.equals(email) && !tokenExpirado(token);
+    }
+
+    private boolean tokenExpirado(String token) {
+        return extraerClaims(token).getExpiration().before(new Date());
     }
 
     private Claims extraerClaims(String token) {
