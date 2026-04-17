@@ -90,6 +90,13 @@ public class MovimientoService {
         );
     }
 
+    public PageResponseDTO<MovimientoDTO> obtenerMovimientosUsuarioLogueado(String email, Long categoriaId, String search, String orden, int page, int size) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        return obtenerTodos(usuario.getId(), categoriaId, search, orden, page, size);
+    }
+
     public ResumenMovimientoDTO obtenerResumenPorUsuario(Long usuarioId) {
         List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId, Pageable.unpaged()).getContent();
 
@@ -199,9 +206,9 @@ public class MovimientoService {
                 .collect(Collectors.toList());
     }
 
-    public MovimientoDTO guardarMovimiento(MovimientoCrearDTO dto) {
-        Usuario usuario = usuarioRepository.findById(dto.getUsuarioId())
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + dto.getUsuarioId()));
+    public MovimientoDTO guardarMovimiento(MovimientoCrearDTO dto, String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
         Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
                 .orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada con id: " + dto.getCategoriaId()));
@@ -232,8 +239,8 @@ public class MovimientoService {
         Movimiento movimiento = movimientoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Movimiento no encontrado con id: " + id));
 
-        Usuario usuario = usuarioRepository.findById(dto.getUsuarioId())
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + dto.getUsuarioId()));
+        Usuario usuario = usuarioRepository.findById(movimiento.getUsuario().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
         Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
                 .orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada con id: " + dto.getCategoriaId()));

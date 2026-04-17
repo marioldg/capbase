@@ -29,23 +29,17 @@ public class MovimientoCrearDTO {
     @NotNull(message = "La categoria es obligatoria")
     private Long categoriaId;
 
-    @NotNull(message = "El usuario es obligatorio")
-    private Long usuarioId;
-
-    // Constructor vacío
     public MovimientoCrearDTO() {
     }
 
-    // Constructor completo
     public MovimientoCrearDTO(String concepto, String descripcion, BigDecimal cantidad,
-                              LocalDate fecha, String tipo, Long categoriaId, Long usuarioId) {
+                              LocalDate fecha, String tipo, Long categoriaId) {
         this.concepto = concepto;
         this.descripcion = descripcion;
         this.cantidad = cantidad;
         this.fecha = fecha;
         this.tipo = tipo;
         this.categoriaId = categoriaId;
-        this.usuarioId = usuarioId;
     }
 
     public String getConcepto() {
@@ -94,13 +88,5 @@ public class MovimientoCrearDTO {
 
     public void setCategoriaId(Long categoriaId) {
         this.categoriaId = categoriaId;
-    }
-
-    public Long getUsuarioId() {
-        return usuarioId;
-    }
-
-    public void setUsuarioId(Long usuarioId) {
-        this.usuarioId = usuarioId;
     }
 }

@@ -5,6 +5,7 @@ import com.capbase.capbase.dto.UsuarioDTO;
 import com.capbase.capbase.exception.ResourceNotFoundException;
 import com.capbase.capbase.model.Usuario;
 import com.capbase.capbase.repository.UsuarioRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -15,9 +16,11 @@ import java.util.stream.Collectors;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UsuarioService(UsuarioRepository usuarioRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<UsuarioDTO> obtenerTodos() {
@@ -31,7 +34,7 @@ public class UsuarioService {
         Usuario usuario = new Usuario();
         usuario.setNombre(dto.getNombre());
         usuario.setEmail(dto.getEmail());
-        usuario.setPassword(dto.getPassword());
+        usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
         usuario.setFechaRegistro(LocalDate.now());
 
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
@@ -45,7 +48,7 @@ public class UsuarioService {
 
         usuario.setNombre(dto.getNombre());
         usuario.setEmail(dto.getEmail());
-        usuario.setPassword(dto.getPassword());
+        usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
 
         Usuario usuarioActualizado = usuarioRepository.save(usuario);
 

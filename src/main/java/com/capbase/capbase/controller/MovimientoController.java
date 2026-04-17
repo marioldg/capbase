@@ -8,6 +8,7 @@ import com.capbase.capbase.dto.ResumenMensualDTO;
 import com.capbase.capbase.dto.ResumenMovimientoDTO;
 import com.capbase.capbase.service.MovimientoService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,13 +25,23 @@ public class MovimientoController {
 
     @GetMapping
     public PageResponseDTO<MovimientoDTO> obtenerMovimientos(
-            @RequestParam(required = false) Long usuarioId,
+            Authentication authentication,
             @RequestParam(required = false) Long categoriaId,
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "desc") String orden,
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "5") int size) {
-        return movimientoService.obtenerTodos(usuarioId, categoriaId, search, orden, page, size);
+
+        String email = authentication.getName();
+
+        return movimientoService.obtenerMovimientosUsuarioLogueado(
+                email,
+                categoriaId,
+                search,
+                orden,
+                page,
+                size
+        );
     }
 
     @GetMapping("/resumen")
@@ -62,14 +73,16 @@ public class MovimientoController {
     }
 
     @PostMapping
-    public MovimientoDTO guardarMovimiento(@Valid @RequestBody MovimientoCrearDTO movimiento) {
-        // Aqui creo un nuevo movimiento
-        return movimientoService.guardarMovimiento(movimiento);
+    public MovimientoDTO guardarMovimiento(
+            Authentication authentication,
+            @Valid @RequestBody MovimientoCrearDTO movimiento) {
+
+        String email = authentication.getName();
+        return movimientoService.guardarMovimiento(movimiento, email);
     }
 
     @PutMapping("/{id}")
     public MovimientoDTO actualizarMovimiento(@PathVariable Long id, @Valid @RequestBody MovimientoCrearDTO movimiento) {
-        // Actualizo un movimiento existente
         return movimientoService.actualizarMovimiento(id, movimiento);
     }
 
