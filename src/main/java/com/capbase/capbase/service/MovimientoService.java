@@ -116,6 +116,13 @@ public class MovimientoService {
         return new ResumenMovimientoDTO(totalIngresos, totalGastos, balance);
     }
 
+    public ResumenMovimientoDTO obtenerResumenPorUsuarioLogueado(String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        return obtenerResumenPorUsuario(usuario.getId());
+    }
+
     public List<ResumenCategoriaDTO> obtenerResumenPorCategorias(Long usuarioId, String tipo, Integer mes, Integer anio) {
         List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId, Pageable.unpaged()).getContent();
 
@@ -147,6 +154,13 @@ public class MovimientoService {
         resumen.sort((a, b) -> b.getTotal().compareTo(a.getTotal()));
 
         return resumen;
+    }
+
+    public List<ResumenCategoriaDTO> obtenerResumenPorCategoriasUsuarioLogueado(String email, String tipo, Integer mes, Integer anio) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        return obtenerResumenPorCategorias(usuario.getId(), tipo, mes, anio);
     }
 
     public List<ResumenMensualDTO> obtenerResumenMensual(Long usuarioId, Integer anio) {
@@ -185,6 +199,13 @@ public class MovimientoService {
         return resumenMensual;
     }
 
+    public List<ResumenMensualDTO> obtenerResumenMensualUsuarioLogueado(String email, Integer anio) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        return obtenerResumenMensual(usuario.getId(), anio);
+    }
+
     public List<ResumenCategoriaDTO> obtenerTopCategorias(Long usuarioId, Integer limite) {
         List<Movimiento> movimientos = movimientoRepository.findByUsuarioId(usuarioId, Pageable.unpaged()).getContent();
 
@@ -204,6 +225,13 @@ public class MovimientoService {
                 .sorted((a, b) -> b.getTotal().compareTo(a.getTotal()))
                 .limit(limite)
                 .collect(Collectors.toList());
+    }
+
+    public List<ResumenCategoriaDTO> obtenerTopCategoriasUsuarioLogueado(String email, Integer limite) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        return obtenerTopCategorias(usuario.getId(), limite);
     }
 
     public MovimientoDTO guardarMovimiento(MovimientoCrearDTO dto, String email) {
@@ -227,20 +255,23 @@ public class MovimientoService {
         return convertirDTO(movimientoGuardado);
     }
 
-    public void eliminarMovimiento(Long id) {
-        if (!movimientoRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Movimiento no encontrado con id: " + id);
-        }
+    public void eliminarMovimiento(Long id, String email) {
 
-        movimientoRepository.deleteById(id);
-    }
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-    public MovimientoDTO actualizarMovimiento(Long id, MovimientoCrearDTO dto) {
-        Movimiento movimiento = movimientoRepository.findById(id)
+        Movimiento movimiento = movimientoRepository.findByIdAndUsuarioId(id, usuario.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Movimiento no encontrado con id: " + id));
 
-        Usuario usuario = usuarioRepository.findById(movimiento.getUsuario().getId())
+        movimientoRepository.delete(movimiento);
+    }
+
+    public MovimientoDTO actualizarMovimiento(Long id, MovimientoCrearDTO dto, String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        Movimiento movimiento = movimientoRepository.findByIdAndUsuarioId(id, usuario.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Movimiento no encontrado con id: " + id));
 
         Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
                 .orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada con id: " + dto.getCategoriaId()));

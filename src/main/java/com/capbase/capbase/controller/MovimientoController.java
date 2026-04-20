@@ -45,31 +45,38 @@ public class MovimientoController {
     }
 
     @GetMapping("/resumen")
-    public ResumenMovimientoDTO obtenerResumen(@RequestParam Long usuarioId) {
-        return movimientoService.obtenerResumenPorUsuario(usuarioId);
+    public ResumenMovimientoDTO obtenerResumen(Authentication authentication) {
+        String email = authentication.getName();
+        return movimientoService.obtenerResumenPorUsuarioLogueado(email);
     }
 
     @GetMapping("/resumen-categorias")
     public List<ResumenCategoriaDTO> obtenerResumenPorCategorias(
-            @RequestParam Long usuarioId,
+            Authentication authentication,
             @RequestParam String tipo,
             @RequestParam(required = false) Integer mes,
             @RequestParam(required = false) Integer anio) {
-        return movimientoService.obtenerResumenPorCategorias(usuarioId, tipo, mes, anio);
+
+        String email = authentication.getName();
+        return movimientoService.obtenerResumenPorCategoriasUsuarioLogueado(email, tipo, mes, anio);
     }
 
     @GetMapping("/resumen-mensual")
     public List<ResumenMensualDTO> obtenerResumenMensual(
-            @RequestParam Long usuarioId,
+            Authentication authentication,
             @RequestParam Integer anio) {
-        return movimientoService.obtenerResumenMensual(usuarioId, anio);
+
+        String email = authentication.getName();
+        return movimientoService.obtenerResumenMensualUsuarioLogueado(email, anio);
     }
 
     @GetMapping("/top-categorias")
     public List<ResumenCategoriaDTO> obtenerTopCategorias(
-            @RequestParam Long usuarioId,
+            Authentication authentication,
             @RequestParam(required = false, defaultValue = "3") Integer limite) {
-        return movimientoService.obtenerTopCategorias(usuarioId, limite);
+
+        String email = authentication.getName();
+        return movimientoService.obtenerTopCategoriasUsuarioLogueado(email, limite);
     }
 
     @PostMapping
@@ -82,12 +89,17 @@ public class MovimientoController {
     }
 
     @PutMapping("/{id}")
-    public MovimientoDTO actualizarMovimiento(@PathVariable Long id, @Valid @RequestBody MovimientoCrearDTO movimiento) {
-        return movimientoService.actualizarMovimiento(id, movimiento);
-    }
+    public MovimientoDTO actualizarMovimiento(
+            Authentication authentication,
+            @PathVariable Long id,
+            @Valid @RequestBody MovimientoCrearDTO movimiento) {
 
+        String email = authentication.getName();
+        return movimientoService.actualizarMovimiento(id, movimiento, email);
+    }
     @DeleteMapping("/{id}")
-    public void eliminarMovimiento(@PathVariable Long id) {
-        movimientoService.eliminarMovimiento(id);
+    public void eliminarMovimiento(Authentication authentication, @PathVariable Long id) {
+        String email = authentication.getName();
+        movimientoService.eliminarMovimiento(id, email);
     }
 }
