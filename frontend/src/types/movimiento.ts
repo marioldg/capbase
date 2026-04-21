@@ -18,3 +18,12 @@ export interface PageResponse<T> {
   first: boolean;
   last: boolean;
 }
+
+export interface MovimientoCrearRequest {
+  concepto: string;
+  descripcion: string;
+  cantidad: number;
+  fecha: string;
+  tipo: string;
+  categoriaId: number;
+}

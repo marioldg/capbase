@@ -51,14 +51,25 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
     navigate("/login", { replace: true });
   };
 
+  const irANuevoMovimiento = () => {
+    navigate("/movimientos/nuevo");
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.header}>
           <h1 style={styles.title}>Mis movimientos</h1>
-          <button onClick={cerrarSesion} style={styles.logoutButton}>
-            Cerrar sesión
-          </button>
+
+          <div style={styles.actions}>
+            <button onClick={irANuevoMovimiento} style={styles.newButton}>
+              Nuevo movimiento
+            </button>
+
+            <button onClick={cerrarSesion} style={styles.logoutButton}>
+              Cerrar sesión
+            </button>
+          </div>
         </div>
 
         {error && <p style={styles.error}>{error}</p>}
@@ -120,6 +131,19 @@ const styles: Record<string, React.CSSProperties> = {
   },
   title: {
     margin: 0,
+  },
+  actions: {
+    display: "flex",
+    gap: "12px",
+  },
+  newButton: {
+    padding: "10px 16px",
+    backgroundColor: "#2563eb",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontSize: "14px",
   },
   logoutButton: {
     padding: "10px 16px",
