@@ -42,3 +42,13 @@ export const crearMovimiento = async (
 
   return response.data;
 };
+
+export const eliminarMovimiento = async (id: number): Promise<void> => {
+  const token = localStorage.getItem("token");
+
+  await axios.delete(`${API_URL}/movimientos/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};

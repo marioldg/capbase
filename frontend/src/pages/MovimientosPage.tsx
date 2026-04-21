@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { obtenerMovimientos } from "../services/movimientoService";
+import {
+  eliminarMovimiento,
+  obtenerMovimientos,
+} from "../services/movimientoService";
 import type { Movimiento } from "../types/movimiento";
 
 interface MovimientosPageProps {
@@ -14,36 +17,51 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const cargarMovimientos = async () => {
+    let ignore = false;
+
+    const cargarDatos = async () => {
       try {
         const respuesta = await obtenerMovimientos();
-        setMovimientos(respuesta.content);
+
+        if (!ignore) {
+          setMovimientos(respuesta.content);
+        }
       } catch (err: unknown) {
         console.error(err);
 
         if (axios.isAxiosError(err)) {
           if (err.response?.status === 403) {
-            onLogout();
-            navigate("/login", { replace: true });
+            if (!ignore) {
+              onLogout();
+              navigate("/login", { replace: true });
+            }
             return;
           }
 
-          if (err.response) {
-            setError(
-              `Error ${err.response.status}: no se pudieron cargar los movimientos`,
-            );
-          } else if (err.request) {
-            setError("No se pudo conectar con el backend");
-          } else {
-            setError("Error inesperado al cargar movimientos");
+          if (!ignore) {
+            if (err.response) {
+              setError(
+                `Error ${err.response.status}: no se pudieron cargar los movimientos`,
+              );
+            } else if (err.request) {
+              setError("No se pudo conectar con el backend");
+            } else {
+              setError("Error inesperado al cargar movimientos");
+            }
           }
         } else {
-          setError("Error inesperado al cargar movimientos");
+          if (!ignore) {
+            setError("Error inesperado al cargar movimientos");
+          }
         }
       }
     };
 
-    cargarMovimientos();
+    void cargarDatos();
+
+    return () => {
+      ignore = true;
+    };
   }, [navigate, onLogout]);
 
   const cerrarSesion = () => {
@@ -53,6 +71,47 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
 
   const irANuevoMovimiento = () => {
     navigate("/movimientos/nuevo");
+  };
+
+  const manejarEliminar = async (id: number) => {
+    const confirmar = window.confirm(
+      "¿Seguro que quieres eliminar este movimiento?",
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    try {
+      await eliminarMovimiento(id);
+
+      // aqui actualizo la lista sin tener que recargar toda la pagina
+      setMovimientos((prevMovimientos) =>
+        prevMovimientos.filter((movimiento) => movimiento.id !== id),
+      );
+    } catch (err: unknown) {
+      console.error(err);
+
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 403) {
+          onLogout();
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        if (err.response) {
+          setError(
+            `Error ${err.response.status}: no se pudo eliminar el movimiento`,
+          );
+        } else if (err.request) {
+          setError("No se pudo conectar con el backend");
+        } else {
+          setError("Error inesperado al eliminar el movimiento");
+        }
+      } else {
+        setError("Error inesperado al eliminar el movimiento");
+      }
+    }
   };
 
   return (
@@ -80,7 +139,17 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
 
         {movimientos.map((movimiento) => (
           <div key={movimiento.id} style={styles.movimiento}>
-            <h3>{movimiento.concepto}</h3>
+            <div style={styles.movimientoHeader}>
+              <h3>{movimiento.concepto}</h3>
+
+              <button
+                onClick={() => manejarEliminar(movimiento.id)}
+                style={styles.deleteButton}
+              >
+                Eliminar
+              </button>
+            </div>
+
             <p>
               <strong>Cantidad:</strong> {movimiento.cantidad}
             </p>
@@ -170,6 +239,22 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "16px",
     marginBottom: "16px",
     backgroundColor: "#fafafa",
+  },
+  movimientoHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "12px",
+    gap: "12px",
+  },
+  deleteButton: {
+    padding: "8px 12px",
+    backgroundColor: "#ef4444",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontSize: "13px",
   },
 };
 
