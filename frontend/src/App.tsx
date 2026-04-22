@@ -16,6 +16,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    sessionStorage.removeItem("movimientoEditarId");
     setToken(null);
   };
 
@@ -46,6 +47,13 @@ function App() {
 
         <Route
           path="/movimientos/nuevo"
+          element={
+            token ? <CrearMovimientoPage /> : <Navigate to="/login" replace />
+          }
+        />
+
+        <Route
+          path="/movimientos/editar"
           element={
             token ? <CrearMovimientoPage /> : <Navigate to="/login" replace />
           }

@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { obtenerCategorias } from "../services/categoriaService";
-import { crearMovimiento } from "../services/movimientoService";
+import {
+  actualizarMovimiento,
+  crearMovimiento,
+  obtenerMovimientoPorId,
+} from "../services/movimientoService";
 import type { Categoria } from "../types/categoria";
 
 function CrearMovimientoPage() {
@@ -15,8 +19,12 @@ function CrearMovimientoPage() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
+  const [cargando, setCargando] = useState(false);
 
   const navigate = useNavigate();
+
+  const movimientoEditarId = sessionStorage.getItem("movimientoEditarId");
+  const esModoEdicion = Boolean(movimientoEditarId);
 
   useEffect(() => {
     const cargarCategorias = async () => {
@@ -29,8 +37,57 @@ function CrearMovimientoPage() {
       }
     };
 
-    cargarCategorias();
+    void cargarCategorias();
   }, []);
+
+  useEffect(() => {
+    if (!esModoEdicion || !movimientoEditarId) {
+      return;
+    }
+
+    let ignore = false;
+
+    const cargarMovimiento = async () => {
+      try {
+        setCargando(true);
+
+        const movimientoAEditar = await obtenerMovimientoPorId(
+          Number(movimientoEditarId),
+        );
+
+        if (!movimientoAEditar) {
+          if (!ignore) {
+            setError("No se encontró el movimiento a editar");
+          }
+          return;
+        }
+
+        if (!ignore) {
+          setConcepto(movimientoAEditar.concepto);
+          setDescripcion(movimientoAEditar.descripcion ?? "");
+          setCantidad(String(movimientoAEditar.cantidad));
+          setFecha(movimientoAEditar.fecha);
+          setTipo(movimientoAEditar.tipo);
+        }
+      } catch (err) {
+        console.error(err);
+
+        if (!ignore) {
+          setError("No se pudo cargar el movimiento");
+        }
+      } finally {
+        if (!ignore) {
+          setCargando(false);
+        }
+      }
+    };
+
+    void cargarMovimiento();
+
+    return () => {
+      ignore = true;
+    };
+  }, [esModoEdicion, movimientoEditarId]);
 
   const manejarSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -38,16 +95,23 @@ function CrearMovimientoPage() {
     setMensaje("");
 
     try {
-      await crearMovimiento({
+      const payload = {
         concepto,
         descripcion,
         cantidad: Number(cantidad),
         fecha,
         tipo,
         categoriaId: Number(categoriaId),
-      });
+      };
 
-      setMensaje("Movimiento creado correctamente");
+      if (esModoEdicion && movimientoEditarId) {
+        await actualizarMovimiento(Number(movimientoEditarId), payload);
+        setMensaje("Movimiento actualizado correctamente");
+        sessionStorage.removeItem("movimientoEditarId");
+      } else {
+        await crearMovimiento(payload);
+        setMensaje("Movimiento creado correctamente");
+      }
 
       setTimeout(() => {
         navigate("/movimientos");
@@ -59,98 +123,116 @@ function CrearMovimientoPage() {
         if (err.response) {
           setError(
             `Error ${err.response.status}: ${
-              err.response.data?.mensaje || "No se pudo crear el movimiento"
+              err.response.data?.mensaje ||
+              (esModoEdicion
+                ? "No se pudo actualizar el movimiento"
+                : "No se pudo crear el movimiento")
             }`,
           );
         } else if (err.request) {
           setError("No se pudo conectar con el backend");
         } else {
-          setError("Error inesperado al crear el movimiento");
+          setError(
+            esModoEdicion
+              ? "Error inesperado al actualizar el movimiento"
+              : "Error inesperado al crear el movimiento",
+          );
         }
       } else {
-        setError("Error inesperado al crear el movimiento");
+        setError(
+          esModoEdicion
+            ? "Error inesperado al actualizar el movimiento"
+            : "Error inesperado al crear el movimiento",
+        );
       }
     }
+  };
+
+  const volver = () => {
+    sessionStorage.removeItem("movimientoEditarId");
+    navigate("/movimientos");
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.header}>
-          <h1 style={styles.title}>Nuevo movimiento</h1>
-          <button
-            type="button"
-            onClick={() => navigate("/movimientos")}
-            style={styles.secondaryButton}
-          >
+          <h1 style={styles.title}>
+            {esModoEdicion ? "Editar movimiento" : "Nuevo movimiento"}
+          </h1>
+          <button type="button" onClick={volver} style={styles.secondaryButton}>
             Volver
           </button>
         </div>
 
-        <form onSubmit={manejarSubmit} style={styles.form}>
-          <input
-            type="text"
-            placeholder="Concepto"
-            value={concepto}
-            onChange={(e) => setConcepto(e.target.value)}
-            style={styles.input}
-            required
-          />
+        {cargando && <p style={styles.info}>Cargando movimiento...</p>}
 
-          <input
-            type="text"
-            placeholder="Descripción"
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-            style={styles.input}
-          />
+        {!cargando && (
+          <form onSubmit={manejarSubmit} style={styles.form}>
+            <input
+              type="text"
+              placeholder="Concepto"
+              value={concepto}
+              onChange={(e) => setConcepto(e.target.value)}
+              style={styles.input}
+              required
+            />
 
-          <input
-            type="number"
-            step="0.01"
-            placeholder="Cantidad"
-            value={cantidad}
-            onChange={(e) => setCantidad(e.target.value)}
-            style={styles.input}
-            required
-          />
+            <input
+              type="text"
+              placeholder="Descripción"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              style={styles.input}
+            />
 
-          <input
-            type="date"
-            value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
-            style={styles.input}
-            required
-          />
+            <input
+              type="number"
+              step="0.01"
+              placeholder="Cantidad"
+              value={cantidad}
+              onChange={(e) => setCantidad(e.target.value)}
+              style={styles.input}
+              required
+            />
 
-          <select
-            value={tipo}
-            onChange={(e) => setTipo(e.target.value)}
-            style={styles.input}
-            required
-          >
-            <option value="GASTO">GASTO</option>
-            <option value="INGRESO">INGRESO</option>
-          </select>
+            <input
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              style={styles.input}
+              required
+            />
 
-          <select
-            value={categoriaId}
-            onChange={(e) => setCategoriaId(e.target.value)}
-            style={styles.input}
-            required
-          >
-            <option value="">Selecciona una categoría</option>
-            {categorias.map((categoria) => (
-              <option key={categoria.id} value={categoria.id}>
-                {categoria.nombre}
-              </option>
-            ))}
-          </select>
+            <select
+              value={tipo}
+              onChange={(e) => setTipo(e.target.value)}
+              style={styles.input}
+              required
+            >
+              <option value="GASTO">GASTO</option>
+              <option value="INGRESO">INGRESO</option>
+            </select>
 
-          <button type="submit" style={styles.primaryButton}>
-            Guardar movimiento
-          </button>
-        </form>
+            <select
+              value={categoriaId}
+              onChange={(e) => setCategoriaId(e.target.value)}
+              style={styles.input}
+              required
+            >
+              <option value="">Selecciona una categoría</option>
+              {categorias.map((categoria) => (
+                <option key={categoria.id} value={categoria.id}>
+                  {categoria.nombre}
+                </option>
+              ))}
+            </select>
+
+            <button type="submit" style={styles.primaryButton}>
+              {esModoEdicion ? "Guardar cambios" : "Guardar movimiento"}
+            </button>
+          </form>
+        )}
 
         {mensaje && <p style={styles.success}>{mensaje}</p>}
         {error && <p style={styles.error}>{error}</p>}
@@ -214,6 +296,11 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "8px",
     fontSize: "14px",
     cursor: "pointer",
+  },
+  info: {
+    textAlign: "center",
+    marginBottom: "16px",
+    color: "#444",
   },
   success: {
     marginTop: "16px",

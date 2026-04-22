@@ -52,3 +52,32 @@ export const eliminarMovimiento = async (id: number): Promise<void> => {
     },
   });
 };
+
+export const actualizarMovimiento = async (
+  id: number,
+  data: MovimientoCrearRequest,
+): Promise<Movimiento> => {
+  const token = localStorage.getItem("token");
+
+  const response = await axios.put<Movimiento>(
+    `${API_URL}/movimientos/${id}`,
+    data,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  return response.data;
+};
+
+export const obtenerMovimientoPorId = async (
+  id: number,
+): Promise<Movimiento | null> => {
+  const respuesta = await obtenerMovimientos();
+  const movimiento = respuesta.content.find((item) => item.id === id);
+
+  return movimiento ?? null;
+};

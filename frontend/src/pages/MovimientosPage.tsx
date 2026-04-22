@@ -65,12 +65,19 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
   }, [navigate, onLogout]);
 
   const cerrarSesion = () => {
+    sessionStorage.removeItem("movimientoEditarId");
     onLogout();
     navigate("/login", { replace: true });
   };
 
   const irANuevoMovimiento = () => {
+    sessionStorage.removeItem("movimientoEditarId");
     navigate("/movimientos/nuevo");
+  };
+
+  const irAEditarMovimiento = (id: number) => {
+    sessionStorage.setItem("movimientoEditarId", String(id));
+    navigate("/movimientos/editar");
   };
 
   const manejarEliminar = async (id: number) => {
@@ -121,11 +128,19 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
           <h1 style={styles.title}>Mis movimientos</h1>
 
           <div style={styles.actions}>
-            <button onClick={irANuevoMovimiento} style={styles.newButton}>
+            <button
+              type="button"
+              onClick={irANuevoMovimiento}
+              style={styles.newButton}
+            >
               Nuevo movimiento
             </button>
 
-            <button onClick={cerrarSesion} style={styles.logoutButton}>
+            <button
+              type="button"
+              onClick={cerrarSesion}
+              style={styles.logoutButton}
+            >
               Cerrar sesión
             </button>
           </div>
@@ -142,12 +157,23 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
             <div style={styles.movimientoHeader}>
               <h3>{movimiento.concepto}</h3>
 
-              <button
-                onClick={() => manejarEliminar(movimiento.id)}
-                style={styles.deleteButton}
-              >
-                Eliminar
-              </button>
+              <div style={styles.cardActions}>
+                <button
+                  type="button"
+                  onClick={() => irAEditarMovimiento(movimiento.id)}
+                  style={styles.editButton}
+                >
+                  Editar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => manejarEliminar(movimiento.id)}
+                  style={styles.deleteButton}
+                >
+                  Eliminar
+                </button>
+              </div>
             </div>
 
             <p>
@@ -246,6 +272,19 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     marginBottom: "12px",
     gap: "12px",
+  },
+  cardActions: {
+    display: "flex",
+    gap: "8px",
+  },
+  editButton: {
+    padding: "8px 12px",
+    backgroundColor: "#f59e0b",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontSize: "13px",
   },
   deleteButton: {
     padding: "8px 12px",
