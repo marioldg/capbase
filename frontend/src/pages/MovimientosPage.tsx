@@ -6,6 +6,8 @@ import {
   obtenerMovimientos,
 } from "../services/movimientoService";
 import type { Movimiento } from "../types/movimiento";
+import { obtenerResumen } from "../services/resumenService";
+import type { Resumen } from "../types/resumen";
 
 interface MovimientosPageProps {
   onLogout: () => void;
@@ -14,6 +16,7 @@ interface MovimientosPageProps {
 function MovimientosPage({ onLogout }: MovimientosPageProps) {
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
   const [error, setError] = useState("");
+  const [resumen, setResumen] = useState<Resumen | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,9 +25,11 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
     const cargarDatos = async () => {
       try {
         const respuesta = await obtenerMovimientos();
+        const resumenData = await obtenerResumen();
 
         if (!ignore) {
           setMovimientos(respuesta.content);
+          setResumen(resumenData);
         }
       } catch (err: unknown) {
         console.error(err);
@@ -126,6 +131,24 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
       <div style={styles.card}>
         <div style={styles.header}>
           <h1 style={styles.title}>Mis movimientos</h1>
+          {resumen && (
+            <div style={styles.resumenContainer}>
+              <div style={styles.resumenCard}>
+                <h3>💰 Ingresos</h3>
+                <p>{resumen.totalIngresos} €</p>
+              </div>
+
+              <div style={styles.resumenCard}>
+                <h3>💸 Gastos</h3>
+                <p>{resumen.totalGastos} €</p>
+              </div>
+
+              <div style={styles.resumenCard}>
+                <h3>📈 Balance</h3>
+                <p>{resumen.balance} €</p>
+              </div>
+            </div>
+          )}
 
           <div style={styles.actions}>
             <button
@@ -294,6 +317,20 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "8px",
     cursor: "pointer",
     fontSize: "13px",
+  },
+
+  resumenContainer: {
+    display: "flex",
+    gap: "16px",
+    marginBottom: "24px",
+  },
+
+  resumenCard: {
+    flex: 1,
+    backgroundColor: "#f3f4f6",
+    padding: "16px",
+    borderRadius: "10px",
+    textAlign: "center",
   },
 };
 
