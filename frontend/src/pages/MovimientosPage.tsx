@@ -7,6 +7,7 @@ import {
   obtenerMovimientos,
 } from "../services/movimientoService";
 import { obtenerResumen } from "../services/resumenService";
+import ResumenChart from "../components/ResumenChart";
 import type { Categoria } from "../types/categoria";
 import type { Movimiento } from "../types/movimiento";
 import type { Resumen } from "../types/resumen";
@@ -171,9 +172,7 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
       "¿Seguro que quieres eliminar este movimiento?",
     );
 
-    if (!confirmar) {
-      return;
-    }
+    if (!confirmar) return;
 
     try {
       await eliminarMovimiento(id);
@@ -258,28 +257,35 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
         </div>
 
         {resumen && (
-          <div style={styles.resumenContainer}>
-            <div style={styles.resumenCard}>
-              <h3 style={styles.resumenTitle}>💰 Ingresos</h3>
-              <p style={{ ...styles.resumenValue, color: "#16a34a" }}>
-                {resumen.totalIngresos} €
-              </p>
+          <>
+            <div style={styles.resumenContainer}>
+              <div style={styles.resumenCard}>
+                <h3 style={styles.resumenTitle}>💰 Ingresos</h3>
+                <p style={{ ...styles.resumenValue, color: "#16a34a" }}>
+                  {resumen.totalIngresos} €
+                </p>
+              </div>
+
+              <div style={styles.resumenCard}>
+                <h3 style={styles.resumenTitle}>💸 Gastos</h3>
+                <p style={{ ...styles.resumenValue, color: "#dc2626" }}>
+                  {resumen.totalGastos} €
+                </p>
+              </div>
+
+              <div style={styles.resumenCard}>
+                <h3 style={styles.resumenTitle}>📈 Balance</h3>
+                <p style={{ ...styles.resumenValue, color: balanceColor }}>
+                  {resumen.balance} €
+                </p>
+              </div>
             </div>
 
-            <div style={styles.resumenCard}>
-              <h3 style={styles.resumenTitle}>💸 Gastos</h3>
-              <p style={{ ...styles.resumenValue, color: "#dc2626" }}>
-                {resumen.totalGastos} €
-              </p>
-            </div>
-
-            <div style={styles.resumenCard}>
-              <h3 style={styles.resumenTitle}>📈 Balance</h3>
-              <p style={{ ...styles.resumenValue, color: balanceColor }}>
-                {resumen.balance} €
-              </p>
-            </div>
-          </div>
+            <ResumenChart
+              ingresos={resumen.totalIngresos}
+              gastos={resumen.totalGastos}
+            />
+          </>
         )}
 
         <div style={styles.filtersContainer}>
@@ -339,7 +345,12 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
         {movimientos.map((movimiento) => (
           <div key={movimiento.id} style={styles.movimiento}>
             <div style={styles.movimientoHeader}>
-              <h3>{movimiento.concepto}</h3>
+              <div>
+                <h3 style={styles.movimientoTitle}>{movimiento.concepto}</h3>
+                {movimiento.descripcion && (
+                  <p style={styles.descripcion}>{movimiento.descripcion}</p>
+                )}
+              </div>
 
               <div style={styles.cardActions}>
                 <button
@@ -360,23 +371,20 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
               </div>
             </div>
 
-            <p>
-              <strong>Cantidad:</strong> {movimiento.cantidad}
-            </p>
-            <p>
-              <strong>Fecha:</strong> {movimiento.fecha}
-            </p>
-            <p>
-              <strong>Tipo:</strong> {movimiento.tipo}
-            </p>
-            <p>
-              <strong>Categoría:</strong> {movimiento.categoriaNombre}
-            </p>
-            {movimiento.descripcion && (
+            <div style={styles.movimientoGrid}>
               <p>
-                <strong>Descripción:</strong> {movimiento.descripcion}
+                <strong>Cantidad:</strong> {movimiento.cantidad} €
               </p>
-            )}
+              <p>
+                <strong>Fecha:</strong> {movimiento.fecha}
+              </p>
+              <p>
+                <strong>Tipo:</strong> {movimiento.tipo}
+              </p>
+              <p>
+                <strong>Categoría:</strong> {movimiento.categoriaNombre}
+              </p>
+            </div>
           </div>
         ))}
       </div>
@@ -516,9 +524,22 @@ const styles: Record<string, React.CSSProperties> = {
   movimientoHeader: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: "12px",
     gap: "12px",
+    flexWrap: "wrap",
+  },
+  movimientoTitle: {
+    margin: "0 0 6px 0",
+  },
+  descripcion: {
+    margin: 0,
+    color: "#6b7280",
+  },
+  movimientoGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: "8px",
   },
   cardActions: {
     display: "flex",
