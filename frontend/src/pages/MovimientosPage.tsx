@@ -7,10 +7,13 @@ import {
   obtenerMovimientos,
 } from "../services/movimientoService";
 import { obtenerResumen } from "../services/resumenService";
+import { obtenerTopCategorias } from "../services/resumenCategoriaService";
 import ResumenChart from "../components/ResumenChart";
+import CategoriasChart from "../components/CategoriasChart";
 import type { Categoria } from "../types/categoria";
 import type { Movimiento } from "../types/movimiento";
 import type { Resumen } from "../types/resumen";
+import type { ResumenCategoria } from "../types/resumenCategoria";
 
 interface MovimientosPageProps {
   onLogout: () => void;
@@ -20,6 +23,7 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [resumen, setResumen] = useState<Resumen | null>(null);
+  const [topCategorias, setTopCategorias] = useState<ResumenCategoria[]>([]);
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
@@ -30,62 +34,34 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
 
   const cargarResumen = useCallback(async () => {
     try {
-      const resumenData = await obtenerResumen();
+      const [resumenData, categoriasData] = await Promise.all([
+        obtenerResumen(),
+        obtenerTopCategorias(),
+      ]);
+
       setResumen(resumenData);
+      setTopCategorias(categoriasData);
     } catch (err) {
       console.error(err);
     }
   }, []);
-
-  const cargarMovimientos = useCallback(async () => {
-    try {
-      const respuesta = await obtenerMovimientos({
-        search: search.trim() || undefined,
-        categoriaId: categoriaId ? Number(categoriaId) : undefined,
-        orden,
-        page: 0,
-        size: 20,
-      });
-
-      setMovimientos(respuesta.content);
-    } catch (err: unknown) {
-      console.error(err);
-
-      if (axios.isAxiosError(err)) {
-        if (err.response?.status === 403) {
-          onLogout();
-          navigate("/login", { replace: true });
-          return;
-        }
-
-        if (err.response) {
-          setError(
-            `Error ${err.response.status}: no se pudieron cargar los movimientos`,
-          );
-        } else if (err.request) {
-          setError("No se pudo conectar con el backend");
-        } else {
-          setError("Error inesperado al cargar movimientos");
-        }
-      } else {
-        setError("Error inesperado al cargar movimientos");
-      }
-    }
-  }, [search, categoriaId, orden, onLogout, navigate]);
 
   useEffect(() => {
     let ignore = false;
 
     const init = async () => {
       try {
-        const [categoriasData, resumenData] = await Promise.all([
-          obtenerCategorias(),
-          obtenerResumen(),
-        ]);
+        const [categoriasData, resumenData, topCategoriasData] =
+          await Promise.all([
+            obtenerCategorias(),
+            obtenerResumen(),
+            obtenerTopCategorias(),
+          ]);
 
         if (!ignore) {
           setCategorias(categoriasData);
           setResumen(resumenData);
+          setTopCategorias(topCategoriasData);
         }
       } catch (err) {
         console.error(err);
@@ -207,7 +183,19 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
 
   const aplicarFiltros = async () => {
     setError("");
-    await cargarMovimientos();
+    try {
+      const respuesta = await obtenerMovimientos({
+        search: search.trim() || undefined,
+        categoriaId: categoriaId ? Number(categoriaId) : undefined,
+        orden,
+        page: 0,
+        size: 20,
+      });
+      setMovimientos(respuesta.content);
+    } catch (err) {
+      console.error(err);
+      setError("No se pudieron aplicar los filtros");
+    }
   };
 
   const limpiarFiltros = async () => {
@@ -285,6 +273,8 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
               ingresos={resumen.totalIngresos}
               gastos={resumen.totalGastos}
             />
+
+            <CategoriasChart data={topCategorias} />
           </>
         )}
 
