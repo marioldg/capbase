@@ -7,9 +7,17 @@ import type {
 
 const API_URL = "http://localhost:8080";
 
-export const obtenerMovimientos = async (): Promise<
-  PageResponse<Movimiento>
-> => {
+interface ObtenerMovimientosParams {
+  categoriaId?: number;
+  search?: string;
+  orden?: string;
+  page?: number;
+  size?: number;
+}
+
+export const obtenerMovimientos = async (
+  params?: ObtenerMovimientosParams,
+): Promise<PageResponse<Movimiento>> => {
   const token = localStorage.getItem("token");
 
   const response = await axios.get<PageResponse<Movimiento>>(
@@ -18,6 +26,7 @@ export const obtenerMovimientos = async (): Promise<
       headers: {
         Authorization: `Bearer ${token}`,
       },
+      params,
     },
   );
 

@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { obtenerCategorias } from "../services/categoriaService";
 import {
   eliminarMovimiento,
   obtenerMovimientos,
 } from "../services/movimientoService";
-import type { Movimiento } from "../types/movimiento";
 import { obtenerResumen } from "../services/resumenService";
+import type { Categoria } from "../types/categoria";
+import type { Movimiento } from "../types/movimiento";
 import type { Resumen } from "../types/resumen";
 
 interface MovimientosPageProps {
@@ -15,21 +17,102 @@ interface MovimientosPageProps {
 
 function MovimientosPage({ onLogout }: MovimientosPageProps) {
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
-  const [error, setError] = useState("");
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [resumen, setResumen] = useState<Resumen | null>(null);
+  const [error, setError] = useState("");
+
+  const [search, setSearch] = useState("");
+  const [categoriaId, setCategoriaId] = useState("");
+  const [orden, setOrden] = useState("desc");
+
   const navigate = useNavigate();
+
+  const cargarResumen = useCallback(async () => {
+    try {
+      const resumenData = await obtenerResumen();
+      setResumen(resumenData);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  const cargarMovimientos = useCallback(async () => {
+    try {
+      const respuesta = await obtenerMovimientos({
+        search: search.trim() || undefined,
+        categoriaId: categoriaId ? Number(categoriaId) : undefined,
+        orden,
+        page: 0,
+        size: 20,
+      });
+
+      setMovimientos(respuesta.content);
+    } catch (err: unknown) {
+      console.error(err);
+
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 403) {
+          onLogout();
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        if (err.response) {
+          setError(
+            `Error ${err.response.status}: no se pudieron cargar los movimientos`,
+          );
+        } else if (err.request) {
+          setError("No se pudo conectar con el backend");
+        } else {
+          setError("Error inesperado al cargar movimientos");
+        }
+      } else {
+        setError("Error inesperado al cargar movimientos");
+      }
+    }
+  }, [search, categoriaId, orden, onLogout, navigate]);
 
   useEffect(() => {
     let ignore = false;
 
-    const cargarDatos = async () => {
+    const init = async () => {
       try {
-        const respuesta = await obtenerMovimientos();
-        const resumenData = await obtenerResumen();
+        const [categoriasData, resumenData] = await Promise.all([
+          obtenerCategorias(),
+          obtenerResumen(),
+        ]);
+
+        if (!ignore) {
+          setCategorias(categoriasData);
+          setResumen(resumenData);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    void init();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const cargar = async () => {
+      try {
+        const respuesta = await obtenerMovimientos({
+          search: search.trim() || undefined,
+          categoriaId: categoriaId ? Number(categoriaId) : undefined,
+          orden,
+          page: 0,
+          size: 20,
+        });
 
         if (!ignore) {
           setMovimientos(respuesta.content);
-          setResumen(resumenData);
         }
       } catch (err: unknown) {
         console.error(err);
@@ -54,20 +137,18 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
               setError("Error inesperado al cargar movimientos");
             }
           }
-        } else {
-          if (!ignore) {
-            setError("Error inesperado al cargar movimientos");
-          }
+        } else if (!ignore) {
+          setError("Error inesperado al cargar movimientos");
         }
       }
     };
 
-    void cargarDatos();
+    void cargar();
 
     return () => {
       ignore = true;
     };
-  }, [navigate, onLogout]);
+  }, [search, categoriaId, orden, onLogout, navigate]);
 
   const cerrarSesion = () => {
     sessionStorage.removeItem("movimientoEditarId");
@@ -96,11 +177,10 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
 
     try {
       await eliminarMovimiento(id);
-
-      // aqui actualizo la lista sin tener que recargar toda la pagina
-      setMovimientos((prevMovimientos) =>
-        prevMovimientos.filter((movimiento) => movimiento.id !== id),
+      setMovimientos((prev) =>
+        prev.filter((movimiento) => movimiento.id !== id),
       );
+      await cargarResumen();
     } catch (err: unknown) {
       console.error(err);
 
@@ -126,29 +206,37 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
     }
   };
 
+  const aplicarFiltros = async () => {
+    setError("");
+    await cargarMovimientos();
+  };
+
+  const limpiarFiltros = async () => {
+    setSearch("");
+    setCategoriaId("");
+    setOrden("desc");
+    setError("");
+
+    try {
+      const respuesta = await obtenerMovimientos({
+        orden: "desc",
+        page: 0,
+        size: 20,
+      });
+      setMovimientos(respuesta.content);
+    } catch (err) {
+      console.error(err);
+      setError("No se pudieron limpiar los filtros");
+    }
+  };
+
+  const balanceColor = resumen && resumen.balance < 0 ? "#dc2626" : "#16a34a";
+
   return (
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.header}>
           <h1 style={styles.title}>Mis movimientos</h1>
-          {resumen && (
-            <div style={styles.resumenContainer}>
-              <div style={styles.resumenCard}>
-                <h3>💰 Ingresos</h3>
-                <p>{resumen.totalIngresos} €</p>
-              </div>
-
-              <div style={styles.resumenCard}>
-                <h3>💸 Gastos</h3>
-                <p>{resumen.totalGastos} €</p>
-              </div>
-
-              <div style={styles.resumenCard}>
-                <h3>📈 Balance</h3>
-                <p>{resumen.balance} €</p>
-              </div>
-            </div>
-          )}
 
           <div style={styles.actions}>
             <button
@@ -167,6 +255,79 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
               Cerrar sesión
             </button>
           </div>
+        </div>
+
+        {resumen && (
+          <div style={styles.resumenContainer}>
+            <div style={styles.resumenCard}>
+              <h3 style={styles.resumenTitle}>💰 Ingresos</h3>
+              <p style={{ ...styles.resumenValue, color: "#16a34a" }}>
+                {resumen.totalIngresos} €
+              </p>
+            </div>
+
+            <div style={styles.resumenCard}>
+              <h3 style={styles.resumenTitle}>💸 Gastos</h3>
+              <p style={{ ...styles.resumenValue, color: "#dc2626" }}>
+                {resumen.totalGastos} €
+              </p>
+            </div>
+
+            <div style={styles.resumenCard}>
+              <h3 style={styles.resumenTitle}>📈 Balance</h3>
+              <p style={{ ...styles.resumenValue, color: balanceColor }}>
+                {resumen.balance} €
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div style={styles.filtersContainer}>
+          <input
+            type="text"
+            placeholder="Buscar por concepto o descripción"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={styles.filterInput}
+          />
+
+          <select
+            value={categoriaId}
+            onChange={(e) => setCategoriaId(e.target.value)}
+            style={styles.filterInput}
+          >
+            <option value="">Todas las categorías</option>
+            {categorias.map((categoria) => (
+              <option key={categoria.id} value={categoria.id}>
+                {categoria.nombre}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={orden}
+            onChange={(e) => setOrden(e.target.value)}
+            style={styles.filterInput}
+          >
+            <option value="desc">Más recientes</option>
+            <option value="asc">Más antiguos</option>
+          </select>
+
+          <button
+            type="button"
+            onClick={aplicarFiltros}
+            style={styles.filterButton}
+          >
+            Aplicar
+          </button>
+
+          <button
+            type="button"
+            onClick={limpiarFiltros}
+            style={styles.clearButton}
+          >
+            Limpiar
+          </button>
         </div>
 
         {error && <p style={styles.error}>{error}</p>}
@@ -234,11 +395,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   card: {
     width: "100%",
-    maxWidth: "800px",
+    maxWidth: "1000px",
     backgroundColor: "#ffffff",
     padding: "32px",
-    borderRadius: "12px",
-    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.08)",
+    borderRadius: "16px",
+    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)",
   },
   header: {
     display: "flex",
@@ -246,31 +407,94 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     marginBottom: "24px",
     gap: "16px",
+    flexWrap: "wrap",
   },
   title: {
     margin: 0,
+    fontSize: "42px",
+    lineHeight: 1.1,
   },
   actions: {
     display: "flex",
     gap: "12px",
   },
   newButton: {
-    padding: "10px 16px",
+    padding: "12px 18px",
     backgroundColor: "#2563eb",
     color: "#fff",
     border: "none",
-    borderRadius: "8px",
+    borderRadius: "10px",
     cursor: "pointer",
-    fontSize: "14px",
+    fontSize: "15px",
+    fontWeight: 600,
   },
   logoutButton: {
-    padding: "10px 16px",
+    padding: "12px 18px",
     backgroundColor: "#dc2626",
     color: "#fff",
     border: "none",
-    borderRadius: "8px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontSize: "15px",
+    fontWeight: 600,
+  },
+  resumenContainer: {
+    display: "flex",
+    gap: "16px",
+    marginBottom: "24px",
+    flexWrap: "wrap",
+  },
+  resumenCard: {
+    flex: 1,
+    minWidth: "180px",
+    backgroundColor: "#f8fafc",
+    padding: "18px",
+    borderRadius: "14px",
+    textAlign: "center",
+    border: "1px solid #e5e7eb",
+  },
+  resumenTitle: {
+    margin: "0 0 8px 0",
+    fontSize: "24px",
+  },
+  resumenValue: {
+    margin: 0,
+    fontSize: "28px",
+    fontWeight: 700,
+  },
+  filtersContainer: {
+    display: "flex",
+    gap: "12px",
+    marginBottom: "24px",
+    flexWrap: "wrap",
+    alignItems: "center",
+  },
+  filterInput: {
+    padding: "12px",
+    border: "1px solid #d1d5db",
+    borderRadius: "10px",
+    fontSize: "15px",
+    minWidth: "180px",
+  },
+  filterButton: {
+    padding: "12px 16px",
+    backgroundColor: "#111827",
+    color: "#fff",
+    border: "none",
+    borderRadius: "10px",
     cursor: "pointer",
     fontSize: "14px",
+    fontWeight: 600,
+  },
+  clearButton: {
+    padding: "12px 16px",
+    backgroundColor: "#6b7280",
+    color: "#fff",
+    border: "none",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: 600,
   },
   info: {
     textAlign: "center",
@@ -283,9 +507,9 @@ const styles: Record<string, React.CSSProperties> = {
     color: "red",
   },
   movimiento: {
-    border: "1px solid #ddd",
-    borderRadius: "10px",
-    padding: "16px",
+    border: "1px solid #e5e7eb",
+    borderRadius: "14px",
+    padding: "18px",
     marginBottom: "16px",
     backgroundColor: "#fafafa",
   },
@@ -301,36 +525,24 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "8px",
   },
   editButton: {
-    padding: "8px 12px",
+    padding: "9px 14px",
     backgroundColor: "#f59e0b",
     color: "#fff",
     border: "none",
     borderRadius: "8px",
     cursor: "pointer",
     fontSize: "13px",
+    fontWeight: 600,
   },
   deleteButton: {
-    padding: "8px 12px",
+    padding: "9px 14px",
     backgroundColor: "#ef4444",
     color: "#fff",
     border: "none",
     borderRadius: "8px",
     cursor: "pointer",
     fontSize: "13px",
-  },
-
-  resumenContainer: {
-    display: "flex",
-    gap: "16px",
-    marginBottom: "24px",
-  },
-
-  resumenCard: {
-    flex: 1,
-    backgroundColor: "#f3f4f6",
-    padding: "16px",
-    borderRadius: "10px",
-    textAlign: "center",
+    fontWeight: 600,
   },
 };
 
