@@ -8,12 +8,15 @@ import {
 } from "../services/movimientoService";
 import { obtenerResumen } from "../services/resumenService";
 import { obtenerTopCategorias } from "../services/resumenCategoriaService";
+import { obtenerResumenMensual } from "../services/resumenMensualServices";
 import ResumenChart from "../components/ResumenChart";
 import CategoriasChart from "../components/CategoriasChart";
+import ResumenMensualChart from "../components/ResumenMensualChart";
 import type { Categoria } from "../types/categoria";
 import type { Movimiento } from "../types/movimiento";
 import type { Resumen } from "../types/resumen";
 import type { ResumenCategoria } from "../types/resumenCategoria";
+import type { ResumenMensual } from "../types/resumenMensual";
 
 interface MovimientosPageProps {
   onLogout: () => void;
@@ -24,44 +27,71 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [topCategorias, setTopCategorias] = useState<ResumenCategoria[]>([]);
+  const [resumenMensual, setResumenMensual] = useState<ResumenMensual[]>([]);
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
   const [orden, setOrden] = useState("desc");
 
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
   const navigate = useNavigate();
+
+  const isMobile = windowWidth <= 768;
+  const anioActual = new Date().getFullYear();
+
+  useEffect(() => {
+    const manejarResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener("resize", manejarResize);
+
+    return () => {
+      window.removeEventListener("resize", manejarResize);
+    };
+  }, []);
 
   const cargarResumen = useCallback(async () => {
     try {
-      const [resumenData, categoriasData] = await Promise.all([
-        obtenerResumen(),
-        obtenerTopCategorias(),
-      ]);
+      const [resumenData, categoriasData, resumenMensualData] =
+        await Promise.all([
+          obtenerResumen(),
+          obtenerTopCategorias(),
+          obtenerResumenMensual(anioActual),
+        ]);
 
       setResumen(resumenData);
       setTopCategorias(categoriasData);
+      setResumenMensual(resumenMensualData);
     } catch (err) {
       console.error(err);
     }
-  }, []);
+  }, [anioActual]);
 
   useEffect(() => {
     let ignore = false;
 
     const init = async () => {
       try {
-        const [categoriasData, resumenData, topCategoriasData] =
-          await Promise.all([
-            obtenerCategorias(),
-            obtenerResumen(),
-            obtenerTopCategorias(),
-          ]);
+        const [
+          categoriasData,
+          resumenData,
+          topCategoriasData,
+          resumenMensualData,
+        ] = await Promise.all([
+          obtenerCategorias(),
+          obtenerResumen(),
+          obtenerTopCategorias(),
+          obtenerResumenMensual(anioActual),
+        ]);
 
         if (!ignore) {
           setCategorias(categoriasData);
           setResumen(resumenData);
           setTopCategorias(topCategoriasData);
+          setResumenMensual(resumenMensualData);
         }
       } catch (err) {
         console.error(err);
@@ -73,7 +103,7 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [anioActual]);
 
   useEffect(() => {
     let ignore = false;
@@ -152,9 +182,11 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
 
     try {
       await eliminarMovimiento(id);
+
       setMovimientos((prev) =>
         prev.filter((movimiento) => movimiento.id !== id),
       );
+
       await cargarResumen();
     } catch (err: unknown) {
       console.error(err);
@@ -183,6 +215,7 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
 
   const aplicarFiltros = async () => {
     setError("");
+
     try {
       const respuesta = await obtenerMovimientos({
         search: search.trim() || undefined,
@@ -191,6 +224,7 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
         page: 0,
         size: 20,
       });
+
       setMovimientos(respuesta.content);
     } catch (err) {
       console.error(err);
@@ -210,6 +244,7 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
         page: 0,
         size: 20,
       });
+
       setMovimientos(respuesta.content);
     } catch (err) {
       console.error(err);
@@ -219,17 +254,19 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
 
   const balanceColor = resumen && resumen.balance < 0 ? "#dc2626" : "#16a34a";
 
-  return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <div style={styles.header}>
-          <h1 style={styles.title}>Mis movimientos</h1>
+  const responsiveStyles = getStyles(isMobile);
 
-          <div style={styles.actions}>
+  return (
+    <div style={responsiveStyles.container}>
+      <div style={responsiveStyles.card}>
+        <div style={responsiveStyles.header}>
+          <h1 style={responsiveStyles.title}>Mis movimientos</h1>
+
+          <div style={responsiveStyles.actions}>
             <button
               type="button"
               onClick={irANuevoMovimiento}
-              style={styles.newButton}
+              style={responsiveStyles.newButton}
             >
               Nuevo movimiento
             </button>
@@ -237,7 +274,7 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
             <button
               type="button"
               onClick={cerrarSesion}
-              style={styles.logoutButton}
+              style={responsiveStyles.logoutButton}
             >
               Cerrar sesión
             </button>
@@ -246,51 +283,64 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
 
         {resumen && (
           <>
-            <div style={styles.resumenContainer}>
-              <div style={styles.resumenCard}>
-                <h3 style={styles.resumenTitle}>💰 Ingresos</h3>
-                <p style={{ ...styles.resumenValue, color: "#16a34a" }}>
+            <div style={responsiveStyles.resumenContainer}>
+              <div style={responsiveStyles.resumenCard}>
+                <h3 style={responsiveStyles.resumenTitle}>💰 Ingresos</h3>
+                <p
+                  style={{ ...responsiveStyles.resumenValue, color: "#16a34a" }}
+                >
                   {resumen.totalIngresos} €
                 </p>
               </div>
 
-              <div style={styles.resumenCard}>
-                <h3 style={styles.resumenTitle}>💸 Gastos</h3>
-                <p style={{ ...styles.resumenValue, color: "#dc2626" }}>
+              <div style={responsiveStyles.resumenCard}>
+                <h3 style={responsiveStyles.resumenTitle}>💸 Gastos</h3>
+                <p
+                  style={{ ...responsiveStyles.resumenValue, color: "#dc2626" }}
+                >
                   {resumen.totalGastos} €
                 </p>
               </div>
 
-              <div style={styles.resumenCard}>
-                <h3 style={styles.resumenTitle}>📈 Balance</h3>
-                <p style={{ ...styles.resumenValue, color: balanceColor }}>
+              <div style={responsiveStyles.resumenCard}>
+                <h3 style={responsiveStyles.resumenTitle}>📈 Balance</h3>
+                <p
+                  style={{
+                    ...responsiveStyles.resumenValue,
+                    color: balanceColor,
+                  }}
+                >
                   {resumen.balance} €
                 </p>
               </div>
             </div>
 
-            <ResumenChart
-              ingresos={resumen.totalIngresos}
-              gastos={resumen.totalGastos}
-            />
+            <div style={responsiveStyles.chartsWrapper}>
+              <ResumenChart
+                ingresos={resumen.totalIngresos}
+                gastos={resumen.totalGastos}
+              />
 
-            <CategoriasChart data={topCategorias} />
+              <CategoriasChart data={topCategorias} />
+
+              <ResumenMensualChart data={resumenMensual} />
+            </div>
           </>
         )}
 
-        <div style={styles.filtersContainer}>
+        <div style={responsiveStyles.filtersContainer}>
           <input
             type="text"
             placeholder="Buscar por concepto o descripción"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={styles.filterInput}
+            style={responsiveStyles.filterInput}
           />
 
           <select
             value={categoriaId}
             onChange={(e) => setCategoriaId(e.target.value)}
-            style={styles.filterInput}
+            style={responsiveStyles.filterInput}
           >
             <option value="">Todas las categorías</option>
             {categorias.map((categoria) => (
@@ -303,7 +353,7 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
           <select
             value={orden}
             onChange={(e) => setOrden(e.target.value)}
-            style={styles.filterInput}
+            style={responsiveStyles.filterInput}
           >
             <option value="desc">Más recientes</option>
             <option value="asc">Más antiguos</option>
@@ -312,7 +362,7 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
           <button
             type="button"
             onClick={aplicarFiltros}
-            style={styles.filterButton}
+            style={responsiveStyles.filterButton}
           >
             Aplicar
           </button>
@@ -320,33 +370,38 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
           <button
             type="button"
             onClick={limpiarFiltros}
-            style={styles.clearButton}
+            style={responsiveStyles.clearButton}
           >
             Limpiar
           </button>
         </div>
 
-        {error && <p style={styles.error}>{error}</p>}
+        {error && <p style={responsiveStyles.error}>{error}</p>}
 
         {movimientos.length === 0 && !error && (
-          <p style={styles.info}>No hay movimientos para mostrar.</p>
+          <p style={responsiveStyles.info}>No hay movimientos para mostrar.</p>
         )}
 
         {movimientos.map((movimiento) => (
-          <div key={movimiento.id} style={styles.movimiento}>
-            <div style={styles.movimientoHeader}>
+          <div key={movimiento.id} style={responsiveStyles.movimiento}>
+            <div style={responsiveStyles.movimientoHeader}>
               <div>
-                <h3 style={styles.movimientoTitle}>{movimiento.concepto}</h3>
+                <h3 style={responsiveStyles.movimientoTitle}>
+                  {movimiento.concepto}
+                </h3>
+
                 {movimiento.descripcion && (
-                  <p style={styles.descripcion}>{movimiento.descripcion}</p>
+                  <p style={responsiveStyles.descripcion}>
+                    {movimiento.descripcion}
+                  </p>
                 )}
               </div>
 
-              <div style={styles.cardActions}>
+              <div style={responsiveStyles.cardActions}>
                 <button
                   type="button"
                   onClick={() => irAEditarMovimiento(movimiento.id)}
-                  style={styles.editButton}
+                  style={responsiveStyles.editButton}
                 >
                   Editar
                 </button>
@@ -354,14 +409,14 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
                 <button
                   type="button"
                   onClick={() => manejarEliminar(movimiento.id)}
-                  style={styles.deleteButton}
+                  style={responsiveStyles.deleteButton}
                 >
                   Eliminar
                 </button>
               </div>
             </div>
 
-            <div style={styles.movimientoGrid}>
+            <div style={responsiveStyles.movimientoGrid}>
               <p>
                 <strong>Cantidad:</strong> {movimiento.cantidad} €
               </p>
@@ -382,41 +437,47 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const getStyles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
   container: {
     minHeight: "100vh",
     display: "flex",
     justifyContent: "center",
     alignItems: "flex-start",
     backgroundColor: "#f5f7fb",
-    padding: "40px 20px",
+    padding: isMobile ? "18px 10px" : "40px 20px",
+    boxSizing: "border-box",
   },
   card: {
     width: "100%",
     maxWidth: "1000px",
     backgroundColor: "#ffffff",
-    padding: "32px",
+    padding: isMobile ? "18px" : "32px",
     borderRadius: "16px",
     boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)",
+    boxSizing: "border-box",
   },
   header: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: isMobile ? "stretch" : "center",
     marginBottom: "24px",
     gap: "16px",
-    flexWrap: "wrap",
+    flexDirection: isMobile ? "column" : "row",
   },
   title: {
     margin: 0,
-    fontSize: "42px",
+    fontSize: isMobile ? "30px" : "42px",
     lineHeight: 1.1,
+    textAlign: isMobile ? "center" : "left",
   },
   actions: {
     display: "flex",
     gap: "12px",
+    flexDirection: isMobile ? "column" : "row",
+    width: isMobile ? "100%" : "auto",
   },
   newButton: {
+    width: isMobile ? "100%" : "auto",
     padding: "12px 18px",
     backgroundColor: "#2563eb",
     color: "#fff",
@@ -427,6 +488,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
   logoutButton: {
+    width: isMobile ? "100%" : "auto",
     padding: "12px 18px",
     backgroundColor: "#dc2626",
     color: "#fff",
@@ -437,44 +499,55 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
   resumenContainer: {
-    display: "flex",
+    display: "grid",
+    gridTemplateColumns: isMobile
+      ? "1fr"
+      : "repeat(auto-fit, minmax(180px, 1fr))",
     gap: "16px",
     marginBottom: "24px",
-    flexWrap: "wrap",
   },
   resumenCard: {
-    flex: 1,
-    minWidth: "180px",
     backgroundColor: "#f8fafc",
-    padding: "18px",
+    padding: isMobile ? "16px" : "18px",
     borderRadius: "14px",
     textAlign: "center",
     border: "1px solid #e5e7eb",
   },
   resumenTitle: {
     margin: "0 0 8px 0",
-    fontSize: "24px",
+    fontSize: isMobile ? "20px" : "24px",
   },
   resumenValue: {
     margin: 0,
-    fontSize: "28px",
+    fontSize: isMobile ? "24px" : "28px",
     fontWeight: 700,
   },
+  chartsWrapper: {
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    gap: "20px",
+    marginBottom: "24px",
+    overflowX: "hidden",
+  },
   filtersContainer: {
-    display: "flex",
+    display: "grid",
+    gridTemplateColumns: isMobile
+      ? "1fr"
+      : "minmax(220px, 1fr) minmax(180px, 220px) minmax(160px, 190px) auto auto",
     gap: "12px",
     marginBottom: "24px",
-    flexWrap: "wrap",
     alignItems: "center",
   },
   filterInput: {
+    width: "100%",
     padding: "12px",
     border: "1px solid #d1d5db",
     borderRadius: "10px",
     fontSize: "15px",
-    minWidth: "180px",
+    boxSizing: "border-box",
   },
   filterButton: {
+    width: isMobile ? "100%" : "auto",
     padding: "12px 16px",
     backgroundColor: "#111827",
     color: "#fff",
@@ -485,6 +558,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
   clearButton: {
+    width: isMobile ? "100%" : "auto",
     padding: "12px 16px",
     backgroundColor: "#6b7280",
     color: "#fff",
@@ -507,20 +581,21 @@ const styles: Record<string, React.CSSProperties> = {
   movimiento: {
     border: "1px solid #e5e7eb",
     borderRadius: "14px",
-    padding: "18px",
+    padding: isMobile ? "14px" : "18px",
     marginBottom: "16px",
     backgroundColor: "#fafafa",
   },
   movimientoHeader: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: isMobile ? "stretch" : "flex-start",
     marginBottom: "12px",
     gap: "12px",
-    flexWrap: "wrap",
+    flexDirection: isMobile ? "column" : "row",
   },
   movimientoTitle: {
     margin: "0 0 6px 0",
+    fontSize: isMobile ? "18px" : "20px",
   },
   descripcion: {
     margin: 0,
@@ -528,14 +603,18 @@ const styles: Record<string, React.CSSProperties> = {
   },
   movimientoGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-    gap: "8px",
+    gridTemplateColumns: isMobile
+      ? "1fr"
+      : "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: isMobile ? "4px" : "8px",
   },
   cardActions: {
     display: "flex",
     gap: "8px",
+    width: isMobile ? "100%" : "auto",
   },
   editButton: {
+    flex: isMobile ? 1 : undefined,
     padding: "9px 14px",
     backgroundColor: "#f59e0b",
     color: "#fff",
@@ -546,6 +625,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
   deleteButton: {
+    flex: isMobile ? 1 : undefined,
     padding: "9px 14px",
     backgroundColor: "#ef4444",
     color: "#fff",
@@ -555,6 +635,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "13px",
     fontWeight: 600,
   },
-};
+});
 
 export default MovimientosPage;
