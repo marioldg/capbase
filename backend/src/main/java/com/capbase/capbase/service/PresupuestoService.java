@@ -136,8 +136,8 @@ public class PresupuestoService {
 
             if (p.getLimite().compareTo(BigDecimal.ZERO) > 0) {
                 porcentaje = gastado
-                        .divide(p.getLimite(), 2, RoundingMode.HALF_UP)
                         .multiply(BigDecimal.valueOf(100))
+                        .divide(p.getLimite(), 2, RoundingMode.HALF_UP)
                         .doubleValue();
             }
 

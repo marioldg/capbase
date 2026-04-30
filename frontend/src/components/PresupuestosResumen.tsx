@@ -13,6 +13,22 @@ function PresupuestosResumen({ data }: Props) {
     return "#dc2626"; // rojo
   };
 
+  const getMensaje = (gastado: number, limite: number) => {
+    const restante = limite - gastado;
+
+    if (gastado === 0) return "Sin gastos aún";
+
+    if (restante > 0) {
+      return `Te quedan ${restante.toFixed(2)}€`;
+    }
+
+    if (restante === 0) {
+      return "Has alcanzado el límite";
+    }
+
+    return `⚠️ Te has pasado en ${Math.abs(restante).toFixed(2)}€`;
+  };
+
   return (
     <div style={styles.container}>
       <h3 style={styles.title}>Presupuestos</h3>
@@ -36,7 +52,12 @@ function PresupuestosResumen({ data }: Props) {
             />
           </div>
 
-          <div style={styles.footer}>{item.porcentaje.toFixed(0)}%</div>
+          <div style={styles.footer}>
+            <span style={styles.porcentaje}>{item.porcentaje.toFixed(1)}%</span>
+            <span style={styles.mensaje}>
+              {getMensaje(item.gastado, item.limite)}
+            </span>
+          </div>
         </div>
       ))}
     </div>
@@ -54,13 +75,14 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: "12px",
   },
   card: {
-    marginBottom: "12px",
+    marginBottom: "16px",
   },
   header: {
     display: "flex",
     justifyContent: "space-between",
     fontSize: "14px",
-    marginBottom: "4px",
+    marginBottom: "6px",
+    fontWeight: 600,
   },
   barBackground: {
     width: "100%",
@@ -71,11 +93,19 @@ const styles: Record<string, React.CSSProperties> = {
   barFill: {
     height: "100%",
     borderRadius: "999px",
+    transition: "width 0.4s ease",
   },
   footer: {
+    display: "flex",
+    justifyContent: "space-between",
     fontSize: "12px",
-    marginTop: "4px",
-    textAlign: "right",
+    marginTop: "6px",
+  },
+  porcentaje: {
+    fontWeight: 600,
+  },
+  mensaje: {
+    color: "#6b7280",
   },
 };
 
