@@ -9,14 +9,17 @@ import {
 import { obtenerResumen } from "../services/resumenService";
 import { obtenerTopCategorias } from "../services/resumenCategoriaService";
 import { obtenerResumenMensual } from "../services/resumenMensualServices";
+import { obtenerEstadoPresupuestos } from "../services/presupuestoService";
 import ResumenChart from "../components/ResumenChart";
 import CategoriasChart from "../components/CategoriasChart";
 import ResumenMensualChart from "../components/ResumenMensualChart";
+import PresupuestosResumen from "../components/PresupuestosResumen";
 import type { Categoria } from "../types/categoria";
 import type { Movimiento } from "../types/movimiento";
 import type { Resumen } from "../types/resumen";
 import type { ResumenCategoria } from "../types/resumenCategoria";
 import type { ResumenMensual } from "../types/resumenMensual";
+import type { PresupuestoEstado } from "../types/presupuestoEstado";
 
 interface MovimientosPageProps {
   onLogout: () => void;
@@ -28,6 +31,7 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [topCategorias, setTopCategorias] = useState<ResumenCategoria[]>([]);
   const [resumenMensual, setResumenMensual] = useState<ResumenMensual[]>([]);
+  const [presupuestos, setPresupuestos] = useState<PresupuestoEstado[]>([]);
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
@@ -40,6 +44,13 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
 
   const isMobile = windowWidth <= 768;
   const anioActual = new Date().getFullYear();
+  const [anioSeleccionado, setAnioSeleccionado] = useState(anioActual);
+  const aniosDisponibles = [
+    anioActual - 2,
+    anioActual - 1,
+    anioActual,
+    anioActual + 1,
+  ];
 
   useEffect(() => {
     const manejarResize = () => {
@@ -55,20 +66,26 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
 
   const cargarResumen = useCallback(async () => {
     try {
-      const [resumenData, categoriasData, resumenMensualData] =
-        await Promise.all([
-          obtenerResumen(),
-          obtenerTopCategorias(),
-          obtenerResumenMensual(anioActual),
-        ]);
+      const [
+        resumenData,
+        categoriasData,
+        resumenMensualData,
+        presupuestosData,
+      ] = await Promise.all([
+        obtenerResumen(),
+        obtenerTopCategorias(),
+        obtenerResumenMensual(anioSeleccionado),
+        obtenerEstadoPresupuestos(),
+      ]);
 
       setResumen(resumenData);
       setTopCategorias(categoriasData);
       setResumenMensual(resumenMensualData);
+      setPresupuestos(presupuestosData);
     } catch (err) {
       console.error(err);
     }
-  }, [anioActual]);
+  }, [anioSeleccionado]);
 
   useEffect(() => {
     let ignore = false;
@@ -80,11 +97,13 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
           resumenData,
           topCategoriasData,
           resumenMensualData,
+          presupuestosData,
         ] = await Promise.all([
           obtenerCategorias(),
           obtenerResumen(),
           obtenerTopCategorias(),
-          obtenerResumenMensual(anioActual),
+          obtenerResumenMensual(anioSeleccionado),
+          obtenerEstadoPresupuestos(),
         ]);
 
         if (!ignore) {
@@ -92,6 +111,7 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
           setResumen(resumenData);
           setTopCategorias(topCategoriasData);
           setResumenMensual(resumenMensualData);
+          setPresupuestos(presupuestosData);
         }
       } catch (err) {
         console.error(err);
@@ -103,7 +123,7 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
     return () => {
       ignore = true;
     };
-  }, [anioActual]);
+  }, [anioSeleccionado]);
 
   useEffect(() => {
     let ignore = false;
@@ -323,7 +343,25 @@ function MovimientosPage({ onLogout }: MovimientosPageProps) {
 
               <CategoriasChart data={topCategorias} />
 
+              <div style={responsiveStyles.yearSelectorContainer}>
+                <label style={responsiveStyles.yearLabel}>Año:</label>
+
+                <select
+                  value={anioSeleccionado}
+                  onChange={(e) => setAnioSeleccionado(Number(e.target.value))}
+                  style={responsiveStyles.yearSelect}
+                >
+                  {aniosDisponibles.map((anio) => (
+                    <option key={anio} value={anio}>
+                      {anio}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <ResumenMensualChart data={resumenMensual} />
+
+              <PresupuestosResumen data={presupuestos} />
             </div>
           </>
         )}
@@ -528,6 +566,27 @@ const getStyles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     gap: "20px",
     marginBottom: "24px",
     overflowX: "hidden",
+  },
+  yearSelectorContainer: {
+    display: "flex",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: "10px",
+    marginBottom: "-10px",
+    flexWrap: "wrap",
+  },
+  yearLabel: {
+    fontWeight: 700,
+    color: "#111827",
+  },
+  yearSelect: {
+    padding: "10px 14px",
+    border: "1px solid #d1d5db",
+    borderRadius: "10px",
+    fontSize: "14px",
+    fontWeight: 600,
+    backgroundColor: "#ffffff",
+    cursor: "pointer",
   },
   filtersContainer: {
     display: "grid",
