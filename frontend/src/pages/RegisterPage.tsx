@@ -47,41 +47,52 @@ function RegisterPage({ onLogin }: RegisterPageProps) {
 
   return (
     <div style={styles.container}>
+      <button
+        type="button"
+        onClick={() => navigate("/")}
+        style={styles.backButton}
+      >
+        ← Volver
+      </button>
+
       <div style={styles.card}>
         <div style={styles.brandBox}>
-          <h1 style={styles.logo}>CapBase</h1>
+          <h1 style={styles.logo}>Crear cuenta</h1>
           <p style={styles.subtitle}>
-            Crea tu cuenta y empieza a controlar tus finanzas.
+            Empieza a organizar tus ingresos, gastos y presupuestos con CapBase.
           </p>
         </div>
 
         <form onSubmit={manejarRegistro} style={styles.form}>
+          <label style={styles.label}>Nombre</label>
           <input
             type="text"
-            placeholder="Nombre"
+            placeholder="Tu nombre"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             style={styles.input}
           />
 
+          <label style={styles.label}>Email</label>
           <input
             type="email"
-            placeholder="Email"
+            placeholder="tuemail@gmail.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             style={styles.input}
           />
 
+          <label style={styles.label}>Contraseña</label>
           <input
             type="password"
-            placeholder="Contraseña"
+            placeholder="Crea una contraseña"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             style={styles.input}
           />
 
           <button type="submit" style={styles.button}>
-            Crear cuenta
+            Crear cuenta gratis
           </button>
         </form>
 
@@ -92,7 +103,7 @@ function RegisterPage({ onLogin }: RegisterPageProps) {
             onClick={() => navigate("/login")}
             style={styles.linkButton}
           >
-            Inicia sesión
+            Iniciar sesión
           </button>
         </p>
 
@@ -111,58 +122,82 @@ const styles: Record<string, React.CSSProperties> = {
     background:
       "linear-gradient(135deg, #eff6ff 0%, #f8fafc 45%, #ecfdf5 100%)",
     padding: "20px",
+    position: "relative",
+    boxSizing: "border-box",
+  },
+  backButton: {
+    position: "absolute",
+    top: "24px",
+    left: "24px",
+    padding: "10px 16px",
+    borderRadius: "999px",
+    border: "1px solid #cbd5e1",
+    backgroundColor: "#ffffff",
+    color: "#0f172a",
+    fontWeight: 700,
+    cursor: "pointer",
+    boxShadow: "0 8px 20px rgba(15, 23, 42, 0.08)",
   },
   card: {
     width: "100%",
-    maxWidth: "430px",
+    maxWidth: "460px",
     backgroundColor: "#ffffff",
-    padding: "34px",
-    borderRadius: "20px",
-    boxShadow: "0 20px 45px rgba(15, 23, 42, 0.12)",
+    padding: "36px",
+    borderRadius: "24px",
+    boxShadow: "0 24px 60px rgba(15, 23, 42, 0.14)",
     border: "1px solid #e5e7eb",
   },
   brandBox: {
     textAlign: "center",
-    marginBottom: "26px",
+    marginBottom: "28px",
   },
   logo: {
     margin: "0 0 8px 0",
     fontSize: "38px",
-    color: "#111827",
+    color: "#0f172a",
+    letterSpacing: "-1px",
   },
   subtitle: {
     margin: 0,
-    color: "#6b7280",
+    color: "#64748b",
     fontSize: "15px",
-    lineHeight: 1.5,
+    lineHeight: 1.6,
   },
   form: {
     display: "flex",
     flexDirection: "column",
-    gap: "14px",
+    gap: "10px",
+  },
+  label: {
+    fontSize: "14px",
+    fontWeight: 700,
+    color: "#334155",
+    marginTop: "6px",
   },
   input: {
-    padding: "13px 14px",
+    padding: "14px",
     border: "1px solid #d1d5db",
-    borderRadius: "12px",
+    borderRadius: "14px",
     fontSize: "15px",
     outline: "none",
+    backgroundColor: "#f8fafc",
   },
   button: {
-    padding: "13px",
+    padding: "14px",
     backgroundColor: "#2563eb",
-    color: "#fff",
+    color: "#ffffff",
     border: "none",
-    borderRadius: "12px",
+    borderRadius: "14px",
     fontSize: "16px",
     cursor: "pointer",
-    fontWeight: 700,
-    marginTop: "4px",
+    fontWeight: 800,
+    marginTop: "14px",
+    boxShadow: "0 12px 24px rgba(37, 99, 235, 0.25)",
   },
   footerText: {
     textAlign: "center",
-    color: "#6b7280",
-    marginTop: "20px",
+    color: "#64748b",
+    marginTop: "22px",
     marginBottom: 0,
   },
   linkButton: {
@@ -170,13 +205,14 @@ const styles: Record<string, React.CSSProperties> = {
     background: "transparent",
     color: "#2563eb",
     cursor: "pointer",
-    fontWeight: 700,
+    fontWeight: 800,
     padding: 0,
   },
   error: {
     marginTop: "16px",
     color: "#dc2626",
     textAlign: "center",
+    fontWeight: 600,
   },
 };
 
