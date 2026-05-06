@@ -2,6 +2,7 @@ package com.capbase.capbase.controller;
 
 import com.capbase.capbase.dto.AuthResponseDTO;
 import com.capbase.capbase.dto.LoginRequestDTO;
+import com.capbase.capbase.dto.RegisterRequestDTO;
 import com.capbase.capbase.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -19,5 +20,10 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponseDTO login(@Valid @RequestBody LoginRequestDTO dto) {
         return authService.login(dto);
+    }
+
+    @PostMapping("/register")
+    public AuthResponseDTO register(@Valid @RequestBody RegisterRequestDTO dto) {
+        return authService.register(dto);
     }
 }

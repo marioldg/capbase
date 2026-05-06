@@ -1,9 +1,10 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { useState } from "react";
 import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 import MovimientosPage from "./pages/MovimientosPage";
 import CrearMovimientoPage from "./pages/CrearMovimientoPage";
-
+import WelcomePage from "./pages/WelcomePage";
 function App() {
   const [token, setToken] = useState<string | null>(
     localStorage.getItem("token"),
@@ -24,12 +25,29 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route
+          path="/"
+          element={
+            token ? <Navigate to="/movimientos" replace /> : <WelcomePage />
+          }
+        />
+        <Route
           path="/login"
           element={
             token ? (
               <Navigate to="/movimientos" replace />
             ) : (
               <LoginPage onLogin={handleLogin} />
+            )
+          }
+        />
+
+        <Route
+          path="/register"
+          element={
+            token ? (
+              <Navigate to="/movimientos" replace />
+            ) : (
+              <RegisterPage onLogin={handleLogin} />
             )
           }
         />
@@ -61,7 +79,7 @@ function App() {
 
         <Route
           path="*"
-          element={<Navigate to={token ? "/movimientos" : "/login"} replace />}
+          element={<Navigate to={token ? "/movimientos" : "/"} replace />}
         />
       </Routes>
     </BrowserRouter>
